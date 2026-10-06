@@ -14,6 +14,12 @@ export const isLiveSupabaseConfigured = Boolean(
   !SUPABASE_URL.includes('xyzcompany')
 );
 
+if (isLiveSupabaseConfigured) {
+  console.info('[LER EduShare] Conectat la baza de date cloud Supabase:', SUPABASE_URL);
+} else {
+  console.warn('[LER EduShare] Supabase neconfigurat, se folosește stocarea locală persistentă.');
+}
+
 export const supabase = isLiveSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
@@ -367,7 +373,7 @@ export const db = {
           .from('resources')
           .select('*')
           .order('created_at', { ascending: false });
-        if (!error && Array.isArray(data) && data.length > 0) {
+        if (!error && Array.isArray(data)) {
           return data.map(r => ({
             id: r.id,
             title: r.title,
