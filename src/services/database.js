@@ -270,66 +270,6 @@ function getLocalReports() {
   return JSON.parse(data);
 }
 
-const STORAGE_BUCKET = 'resource-files';
-
-// Rând din tabelul `resources` -> obiect folosit de interfață
-function mapResource(r) {
-  return {
-    id: r.id,
-    title: r.title,
-    subject: r.subject,
-    grade: r.grade,
-    type: r.type,
-    authorId: r.author_id,
-    authorName: r.author_name,
-    contactHandle: r.contact_handle,
-    status: r.status,
-    isVerified: r.is_verified,
-    verifiedBy: r.verified_by,
-    teacherComment: r.teacher_comment,
-    description: r.description,
-    content: r.content ?? '',
-    link: r.link,
-    attachment: r.attachment || null,
-    createdAt: r.created_at
-  };
-}
-
-function formatFileSize(bytes) {
-  return bytes >= 1024 * 1024
-    ? (bytes / (1024 * 1024)).toFixed(1) + ' MB'
-    : (bytes / 1024).toFixed(1) + ' KB';
-}
-
-function readAsDataUrl(file) {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(reader.result);
-    reader.onerror = () => reject(reader.error);
-    reader.readAsDataURL(file);
-  });
-}
-
-// Încarcă fișierul în Supabase Storage și returnează metadatele salvate în coloana `attachment`
-async function uploadAttachment(file) {
-  const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-  const path = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeName}`;
-  const { error } = await supabase.storage
-    .from(STORAGE_BUCKET)
-    .upload(path, file, { contentType: file.type || 'application/octet-stream', upsert: false });
-  if (error) throw error;
-
-  const bucket = supabase.storage.from(STORAGE_BUCKET);
-  return {
-    name: file.name,
-    size: formatFileSize(file.size),
-    type: file.type || 'application/octet-stream',
-    path,
-    url: bucket.getPublicUrl(path).data.publicUrl,
-    downloadUrl: bucket.getPublicUrl(path, { download: file.name }).data.publicUrl
-  };
-}
-
 // API de Bază de Date Unificat
 export const db = {
   // Verifică starea backend-ului cloud
@@ -428,7 +368,24 @@ export const db = {
           .select('*')
           .order('created_at', { ascending: false });
         if (!error && Array.isArray(data) && data.length > 0) {
-          return data.map(mapResource);
+          return data.map(r => ({
+            id: r.id,
+            title: r.title,
+            subject: r.subject,
+            grade: r.grade,
+            type: r.type,
+            authorId: r.author_id,
+            authorName: r.author_name,
+            contactHandle: r.contact_handle,
+            status: r.status,
+            isVerified: r.is_verified,
+            verifiedBy: r.verified_by,
+            teacherComment: r.teacher_comment,
+            description: r.description,
+            content: r.content,
+            link: r.link,
+            createdAt: r.created_at
+          }));
         }
       } catch (err) {
         console.warn('Eroare preluare resurse cloud, se afișează cele locale:', err);
@@ -441,7 +398,6 @@ export const db = {
   async addResource(resource) {
     if (isLiveSupabaseConfigured && supabase) {
       const isUuid = resource.authorId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resource.authorId);
-      const attachment = resource.attachmentFile ? await uploadAttachment(resource.attachmentFile) : null;
       const { data, error } = await supabase
         .from('resources')
         .insert([{
@@ -455,30 +411,35 @@ export const db = {
           status: 'pending_admin',
           is_verified: false,
           description: resource.description,
-          content: resource.content || '',
-          link: resource.link || null,
-          attachment
+          content: resource.content,
+          link: resource.link || null
         }])
         .select()
         .single();
       if (error) throw error;
-      return mapResource(data);
+      return {
+        id: data.id,
+        title: data.title,
+        subject: data.subject,
+        grade: data.grade,
+        type: data.type,
+        authorId: data.author_id,
+        authorName: data.author_name,
+        contactHandle: data.contact_handle,
+        status: data.status,
+        isVerified: data.is_verified,
+        verifiedBy: data.verified_by,
+        teacherComment: data.teacher_comment,
+        description: data.description,
+        content: data.content,
+        link: data.link,
+        createdAt: data.created_at
+      };
     }
-
-    const { attachmentFile, ...resourceData } = resource;
-    const attachment = attachmentFile
-      ? {
-          name: attachmentFile.name,
-          size: formatFileSize(attachmentFile.size),
-          type: attachmentFile.type || 'application/octet-stream',
-          dataUrl: await readAsDataUrl(attachmentFile)
-        }
-      : null;
 
     const resources = getLocalResources();
     const newRes = {
-      ...resourceData,
-      attachment,
+      ...resource,
       id: `res-${Date.now()}`,
       status: 'pending_admin',
       isVerified: false,
@@ -487,11 +448,7 @@ export const db = {
       createdAt: new Date().toISOString().split('T')[0]
     };
     resources.unshift(newRes);
-    try {
-      localStorage.setItem(STORAGE_RESOURCES, JSON.stringify(resources));
-    } catch (err) {
-      throw new Error('Spațiul local este plin. Configurați Supabase pentru fișiere mari.');
-    }
+    localStorage.setItem(STORAGE_RESOURCES, JSON.stringify(resources));
     return newRes;
   },
 
@@ -510,7 +467,24 @@ export const db = {
         .select()
         .single();
       if (error) throw error;
-      return mapResource(data);
+      return {
+        id: data.id,
+        title: data.title,
+        subject: data.subject,
+        grade: data.grade,
+        type: data.type,
+        authorId: data.author_id,
+        authorName: data.author_name,
+        contactHandle: data.contact_handle,
+        status: data.status,
+        isVerified: data.is_verified,
+        verifiedBy: data.verified_by,
+        teacherComment: data.teacher_comment,
+        description: data.description,
+        content: data.content,
+        link: data.link,
+        createdAt: data.created_at
+      };
     }
 
     const resources = getLocalResources();
@@ -525,12 +499,8 @@ export const db = {
 
   async deleteResource(id) {
     if (isLiveSupabaseConfigured) {
-      const { data: row } = await supabase.from('resources').select('attachment').eq('id', id).maybeSingle();
       const { error } = await supabase.from('resources').delete().eq('id', id);
       if (error) throw error;
-      if (row?.attachment?.path) {
-        await supabase.storage.from(STORAGE_BUCKET).remove([row.attachment.path]);
-      }
       return true;
     }
 

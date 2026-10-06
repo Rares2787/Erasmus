@@ -179,7 +179,7 @@ export default function App() {
           r.title.toLowerCase().includes(q) ||
           r.description.toLowerCase().includes(q) ||
           r.subject.toLowerCase().includes(q) ||
-          (r.content || '').toLowerCase().includes(q) ||
+          r.content.toLowerCase().includes(q) ||
           r.authorName.toLowerCase().includes(q);
         if (!matches) return false;
       }
@@ -209,8 +209,7 @@ export default function App() {
       setResources((prev) => [created, ...prev]);
       showToast('Propunerea a fost înregistrată. Va fi redirecționată către administrator.', 'success');
     } catch (err) {
-      showToast(err?.message || 'Eroare la salvarea resursei.', 'error');
-      throw err;
+      showToast('Eroare la salvarea resursei.', 'error');
     }
   }
 
@@ -655,18 +654,7 @@ export default function App() {
                       <strong style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '6px' }}>
                         Previzualizare Conținut Tehnic:
                       </strong>
-                      {item.content && <div className="stream-content-box">{item.content}</div>}
-                      {item.attachment && (
-                        <a
-                          className="btn btn-secondary btn-sm"
-                          style={{ marginTop: item.content ? '10px' : 0 }}
-                          href={item.attachment.url || item.attachment.dataUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          Deschide documentul atașat: {item.attachment.name}
-                        </a>
-                      )}
+                      <div className="stream-content-box">{item.content}</div>
                     </div>
 
                     {item.link && (
