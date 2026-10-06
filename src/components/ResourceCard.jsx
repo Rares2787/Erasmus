@@ -27,7 +27,14 @@ export default function ResourceCard({
     <article className="resource-card">
       <div>
         <div className="card-header-line">
-          <span className="tag-badge">{resource.subject} &bull; {resource.grade}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+            <span className="tag-badge">{resource.subject} &bull; {resource.grade}</span>
+            {(resource.type === 'Document PDF & Fişă' || resource.attachment || (resource.link && resource.link.includes('pdf'))) && (
+              <span className="tag-badge" style={{ backgroundColor: 'var(--apple-blue-subtle)', color: 'var(--apple-blue)', fontWeight: 700 }}>
+                PDF
+              </span>
+            )}
+          </div>
           {statusBadge}
         </div>
 

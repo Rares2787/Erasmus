@@ -41,6 +41,27 @@ export default function ResourceDetailModal({
     }, 1500);
   }
 
+  let parsedAttachment = null;
+  if (resource.attachment) {
+    try {
+      parsedAttachment = typeof resource.attachment === 'string'
+        ? JSON.parse(resource.attachment)
+        : resource.attachment;
+    } catch (e) {
+      parsedAttachment = null;
+    }
+  }
+
+  function handleDownloadAttachment() {
+    if (!parsedAttachment?.dataUrl) return;
+    const a = document.createElement('a');
+    a.href = parsedAttachment.dataUrl;
+    a.download = parsedAttachment.name || 'document.pdf';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  }
+
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal-dialog modal-large" onClick={(e) => e.stopPropagation()}>
@@ -90,28 +111,99 @@ export default function ResourceDetailModal({
             <p className="detail-body-text">{resource.description}</p>
           </div>
 
-          {/* Content Block */}
-          <div>
-            <div className="detail-header-action">
-              <h4 className="detail-heading">Corp Resursă / Conținut Didactic</h4>
-              <button className="btn btn-ghost btn-sm" onClick={handleCopyContent}>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
-                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
-                </svg>
-                Copiază Conținutul
-              </button>
+          {/* Attached Document / PDF */}
+          {parsedAttachment && (
+            <div>
+              <h4 className="detail-heading">Document Atașat</h4>
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 18px',
+                borderRadius: 'var(--radius-md)',
+                backgroundColor: 'var(--apple-subtle)',
+                border: '1px solid var(--border-hairline)',
+                gap: '16px',
+                flexWrap: 'wrap'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{
+                    width: '38px',
+                    height: '38px',
+                    borderRadius: '8px',
+                    backgroundColor: 'var(--apple-blue-subtle)',
+                    color: 'var(--apple-blue)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    flexShrink: 0
+                  }}>
+                    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                  </div>
+                  <div>
+                    <strong style={{ display: 'block', fontSize: '14px', color: 'var(--text-primary)' }}>
+                      {parsedAttachment.name}
+                    </strong>
+                    <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
+                      {parsedAttachment.size} &bull; Fișier didactic
+                    </span>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {parsedAttachment.dataUrl && (
+                    <a
+                      href={parsedAttachment.dataUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="btn btn-secondary btn-sm"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      Vizualizează Document
+                    </a>
+                  )}
+                  <button
+                    type="button"
+                    className="btn btn-primary btn-sm"
+                    onClick={handleDownloadAttachment}
+                  >
+                    Descarcă Fișier
+                  </button>
+                </div>
+              </div>
             </div>
-            <pre className="code-terminal">{resource.content}</pre>
-          </div>
+          )}
+
+          {/* Content Block */}
+          {resource.content && resource.content !== `[Fișier atașat: ${parsedAttachment?.name}]` && (
+            <div>
+              <div className="detail-header-action">
+                <h4 className="detail-heading">Corp Resursă / Conținut Didactic</h4>
+                <button className="btn btn-ghost btn-sm" onClick={handleCopyContent}>
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                  </svg>
+                  Copiază Conținutul
+                </button>
+              </div>
+              <pre className="code-terminal">{resource.content}</pre>
+            </div>
+          )}
 
           {/* External Link */}
           {resource.link && (
             <div>
               <h4 className="detail-heading">Depozit Document</h4>
-              <a href={resource.link} target="_blank" rel="noopener noreferrer" className="file-link">
-                <span>Deschide depozitul extern asociat</span>
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <a href={resource.link} target="_blank" rel="noopener noreferrer" className="btn btn-secondary btn-sm" style={{ textDecoration: 'none', display: 'inline-flex', gap: '6px' }}>
+                <span>Deschide referința externă</span>
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="7" y1="17" x2="17" y2="7"></line>
                   <polyline points="7 7 17 7 17 17"></polyline>
                 </svg>
