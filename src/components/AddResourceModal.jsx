@@ -16,12 +16,47 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
   const [link, setLink] = useState('');
+  const [attachment, setAttachment] = useState(null); // { name, size, type, dataUrl }
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
 
+  function handleFileUpload(e) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 8 * 1024 * 1024) {
+      alert('Dimensiunea fișierului depășește limita recomandată de 8MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setAttachment({
+        name: file.name,
+        size: (file.size / 1024).toFixed(1) + ' KB',
+        type: file.type || 'application/pdf',
+        dataUrl: reader.result
+      });
+      // Dacă este PDF, actualizăm automat formatul conținutului dacă nu e deja setat
+      if (file.name.toLowerCase().endsWith('.pdf')) {
+        setType('Document PDF & Fişă');
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function handleRemoveAttachment() {
+    setAttachment(null);
+  }
+
   async function handleSubmit(e) {
     e.preventDefault();
+    if (!content.trim() && !attachment) {
+      alert('Vă rugăm să introduceți textul sau să atașați un fișier/PDF.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await onSubmitResource({
@@ -33,8 +68,9 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
         authorName: currentUser?.fullName || 'Elev LER',
         contactHandle,
         description,
-        content,
-        link
+        content: content.trim() || `[Fișier atașat: ${attachment.name}]`,
+        link: link.trim() || null,
+        attachment: attachment ? JSON.stringify(attachment) : null
       });
       onClose();
       // Reset
@@ -42,6 +78,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
       setDescription('');
       setContent('');
       setLink('');
+      setAttachment(null);
     } finally {
       setSubmitting(false);
     }
@@ -101,6 +138,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
             <div className="field-group">
               <label>Format Conținut *</label>
               <select value={type} onChange={(e) => setType(e.target.value)}>
+                <option value="Document PDF & Fişă">Document PDF & Fişă</option>
                 <option value="Note de Curs & Sinteză">Note de Curs & Sinteză</option>
                 <option value="Cod Sursă & Algoritmi">Cod Sursă & Algoritmi</option>
                 <option value="Fișă Aplicativă de Lucru">Fișă Aplicativă de Lucru</option>
@@ -121,6 +159,62 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
           </div>
 
           <div className="field-group">
+            <label>Atașare Fișier / Document PDF (Opțional sau în loc de text)</label>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <input
+                type="file"
+                accept=".pdf,application/pdf,.txt,.doc,.docx"
+                onChange={handleFileUpload}
+                style={{
+                  fontSize: '13px',
+                  padding: '8px',
+                  border: '1px dashed var(--border-strong)',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--apple-subtle)',
+                  cursor: 'pointer'
+                }}
+              />
+              {attachment && (
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: 'var(--radius-sm)',
+                  backgroundColor: 'var(--apple-blue-subtle)',
+                  border: '1px solid var(--apple-blue)'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                      <polyline points="14 2 14 8 20 8"></polyline>
+                      <line x1="16" y1="13" x2="8" y2="13"></line>
+                      <line x1="16" y1="17" x2="8" y2="17"></line>
+                      <polyline points="10 9 9 9 8 9"></polyline>
+                    </svg>
+                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{attachment.name}</span>
+                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>({attachment.size})</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleRemoveAttachment}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      color: 'var(--apple-red)',
+                      cursor: 'pointer',
+                      fontSize: '12px',
+                      fontWeight: 600
+                    }}
+                  >
+                    Șterge
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="field-group">
             <label>Rezumat Didactic & Obiectiv de Învățare *</label>
             <textarea
               rows={2}
@@ -132,12 +226,12 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
           </div>
 
           <div className="field-group">
-            <label>Conținut Tehnic / Cod / Note Structurate *</label>
+            <label>Conținut Tehnic / Cod / Note Structurate {attachment ? '(Opțional)' : '*'}</label>
             <textarea
-              rows={6}
+              rows={5}
               className="mono-field"
-              required
-              placeholder="Introduceți corpul complet al materialului, pașii metodici sau codul sursă..."
+              required={!attachment}
+              placeholder={attachment ? "Opțional: adăugați comentarii, instrucțiuni de studiu sau cod..." : "Introduceți corpul complet al materialului, pașii metodici sau codul sursă..."}
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
