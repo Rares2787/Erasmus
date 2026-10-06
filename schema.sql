@@ -34,8 +34,9 @@ CREATE TABLE IF NOT EXISTS resources (
     verified_by VARCHAR(150),
     teacher_comment TEXT,
     description TEXT NOT NULL,
-    content TEXT NOT NULL,
+    content TEXT NOT NULL DEFAULT '',
     link VARCHAR(500),
+    attachment JSONB,              -- { name, size, type, path, url, downloadUrl } pentru PDF / documente
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
 
@@ -61,6 +62,10 @@ CREATE TABLE IF NOT EXISTS peer_messages (
     message TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- Migrare pentru baze de date deja create (sigur de rulat de mai multe ori)
+ALTER TABLE resources ADD COLUMN IF NOT EXISTS attachment JSONB;
+ALTER TABLE resources ALTER COLUMN content SET DEFAULT '';
 
 -- INDEXURI PENTRU PERFORMANȚĂ
 CREATE INDEX IF NOT EXISTS idx_resources_status ON resources(status);
@@ -88,6 +93,25 @@ CREATE POLICY "Public access on reports" ON reports FOR ALL USING (true) WITH CH
 
 DROP POLICY IF EXISTS "Public access on peer_messages" ON peer_messages;
 CREATE POLICY "Public access on peer_messages" ON peer_messages FOR ALL USING (true) WITH CHECK (true);
+
+-- ============================================================================
+-- STOCARE FIȘIERE (PDF / documente) — Supabase Storage
+-- ============================================================================
+INSERT INTO storage.buckets (id, name, public, file_size_limit)
+VALUES ('resource-files', 'resource-files', TRUE, 8388608)
+ON CONFLICT (id) DO UPDATE SET public = TRUE, file_size_limit = 8388608;
+
+DROP POLICY IF EXISTS "Public read resource files" ON storage.objects;
+CREATE POLICY "Public read resource files" ON storage.objects
+    FOR SELECT USING (bucket_id = 'resource-files');
+
+DROP POLICY IF EXISTS "Public upload resource files" ON storage.objects;
+CREATE POLICY "Public upload resource files" ON storage.objects
+    FOR INSERT WITH CHECK (bucket_id = 'resource-files');
+
+DROP POLICY IF EXISTS "Public delete resource files" ON storage.objects;
+CREATE POLICY "Public delete resource files" ON storage.objects
+    FOR DELETE USING (bucket_id = 'resource-files');
 
 -- Activare sincronizare live Realtime
 DO $$

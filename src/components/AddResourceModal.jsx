@@ -16,7 +16,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
   const [link, setLink] = useState('');
-  const [attachment, setAttachment] = useState(null); // { name, size, type, dataUrl }
+  const [attachment, setAttachment] = useState(null); // { file, name, size }
   const [submitting, setSubmitting] = useState(false);
 
   if (!isOpen) return null;
@@ -26,24 +26,19 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
     if (!file) return;
 
     if (file.size > 8 * 1024 * 1024) {
-      alert('Dimensiunea fișierului depășește limita recomandată de 8MB.');
+      alert('Dimensiunea fișierului depășește limita de 8MB.');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = () => {
-      setAttachment({
-        name: file.name,
-        size: (file.size / 1024).toFixed(1) + ' KB',
-        type: file.type || 'application/pdf',
-        dataUrl: reader.result
-      });
-      // Dacă este PDF, actualizăm automat formatul conținutului dacă nu e deja setat
-      if (file.name.toLowerCase().endsWith('.pdf')) {
-        setType('Document PDF & Fişă');
-      }
-    };
-    reader.readAsDataURL(file);
+    const isPdf = file.name.toLowerCase().endsWith('.pdf');
+    setAttachment({
+      file,
+      name: file.name,
+      size: file.size >= 1024 * 1024
+        ? (file.size / (1024 * 1024)).toFixed(1) + ' MB'
+        : (file.size / 1024).toFixed(1) + ' KB'
+    });
+    if (isPdf) setType('Document PDF & Fişă');
   }
 
   function handleRemoveAttachment() {
@@ -68,9 +63,9 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
         authorName: currentUser?.fullName || 'Elev LER',
         contactHandle,
         description,
-        content: content.trim() || `[Fișier atașat: ${attachment.name}]`,
+        content: content.trim(),
         link: link.trim() || null,
-        attachment: attachment ? JSON.stringify(attachment) : null
+        attachmentFile: attachment ? attachment.file : null
       });
       onClose();
       // Reset
@@ -79,6 +74,8 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
       setContent('');
       setLink('');
       setAttachment(null);
+    } catch (err) {
+      alert(err?.message || 'Încărcarea fișierului a eșuat. Încercați din nou.');
     } finally {
       setSubmitting(false);
     }
