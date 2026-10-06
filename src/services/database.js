@@ -606,6 +606,73 @@ export const db = {
     return true;
   },
 
+  // --- MESAGERIE & DISCUȚII PE MATERIALE (PEER-TO-PEER) ---
+  async getPeerMessages(resourceId) {
+    if (isLiveSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('peer_messages')
+          .select('*')
+          .eq('resource_id', resourceId)
+          .order('created_at', { ascending: true });
+        if (!error && Array.isArray(data)) {
+          return data.map(m => ({
+            id: m.id,
+            resourceId: m.resource_id,
+            senderName: m.sender_name,
+            message: m.message,
+            createdAt: m.created_at
+          }));
+        }
+      } catch (err) {
+        console.warn('Eroare preluare mesaje peer cloud:', err);
+      }
+    }
+
+    // Local storage fallback
+    const key = `ler_peer_msgs_${resourceId}`;
+    const local = localStorage.getItem(key);
+    return local ? JSON.parse(local) : [];
+  },
+
+  async addPeerMessage(resourceId, senderName, messageText) {
+    if (isLiveSupabaseConfigured && supabase) {
+      const isUuid = resourceId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resourceId);
+      const { data, error } = await supabase
+        .from('peer_messages')
+        .insert([{
+          resource_id: isUuid ? resourceId : null,
+          sender_name: senderName,
+          message: messageText
+        }])
+        .select()
+        .single();
+      if (!error && data) {
+        return {
+          id: data.id,
+          resourceId: data.resource_id,
+          senderName: data.sender_name,
+          message: data.message,
+          createdAt: data.created_at
+        };
+      }
+    }
+
+    const key = `ler_peer_msgs_${resourceId}`;
+    const local = localStorage.getItem(key);
+    const msgs = local ? JSON.parse(local) : [];
+    const newMsg = {
+      id: `msg-${Date.now()}-${Math.random()}`,
+      resourceId,
+      senderName,
+      message: messageText,
+      createdAt: new Date().toISOString()
+    };
+    msgs.push(newMsg);
+    localStorage.setItem(key, JSON.stringify(msgs));
+    return newMsg;
+  },
+
   // Abonare la actualizări live (Realtime)
   subscribeLiveUpdates(onUpdate) {
     if (!isLiveSupabaseConfigured || !supabase) return () => {};

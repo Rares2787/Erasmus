@@ -2,8 +2,9 @@
 // LER EduShare — Foaie Detalii Resursă & Asistență Peer-to-Peer
 // ============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../services/database';
 
 export default function ResourceDetailModal({
   resource,
@@ -14,10 +15,23 @@ export default function ResourceDetailModal({
   onAdminRemove,
   onShowToast
 }) {
-  const { isElev, isProfesor, isAdmin } = useAuth();
-  const [showPeerForm, setShowPeerForm] = useState(false);
-  const [peerQuestion, setPeerQuestion] = useState('');
-  const [peerSent, setPeerSent] = useState(false);
+  const { currentUser, isElev, isProfesor, isAdmin } = useAuth();
+  const [messages, setMessages] = useState([]);
+  const [loadingMessages, setLoadingMessages] = useState(false);
+  const [newMsgText, setNewMsgText] = useState('');
+  const [sendingMsg, setSendingMsg] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && resource?.id) {
+      setLoadingMessages(true);
+      db.getPeerMessages(resource.id)
+        .then((data) => setMessages(data || []))
+        .catch(() => setMessages([]))
+        .finally(() => setLoadingMessages(false));
+    } else {
+      setMessages([]);
+    }
+  }, [isOpen, resource?.id]);
 
   if (!isOpen || !resource) return null;
 
@@ -27,18 +41,22 @@ export default function ResourceDetailModal({
       .catch(() => onShowToast('Eroare la copiere.', 'warning'));
   }
 
-  function handleSendPeerQuestion() {
-    if (!peerQuestion.trim()) {
-      alert('Introduceți formularea întrebării înainte de transmitere.');
-      return;
+  async function handleSendMessage(e) {
+    if (e) e.preventDefault();
+    if (!newMsgText.trim()) return;
+
+    setSendingMsg(true);
+    const sender = currentUser?.fullName || 'Elev LER';
+    try {
+      const added = await db.addPeerMessage(resource.id, sender, newMsgText.trim());
+      setMessages((prev) => [...prev, added]);
+      setNewMsgText('');
+      onShowToast('Mesajul a fost trimis în discuția materialului.', 'success');
+    } catch (err) {
+      onShowToast('Eroare la transmiterea mesajului.', 'error');
+    } finally {
+      setSendingMsg(false);
     }
-    setPeerSent(true);
-    onShowToast('Întrebarea a fost redirecționată către colegul mentor.', 'success');
-    setTimeout(() => {
-      setPeerQuestion('');
-      setShowPeerForm(false);
-      setPeerSent(false);
-    }, 1500);
   }
 
   let parsedAttachment = null;
@@ -211,46 +229,124 @@ export default function ResourceDetailModal({
             </div>
           )}
 
-          {/* Peer Help Module */}
-          <div className="mentor-box">
-            <div className="mentor-box-header">
+          {/* Secțiune de Mesagerie și Discuții pe Material */}
+          <div className="mentor-box" style={{ padding: '20px' }}>
+            <div className="mentor-box-header" style={{ marginBottom: '16px' }}>
               <div>
-                <span className="mentor-title">Asistență Didactică Peer-to-Peer</span>
-                <span className="mentor-sub">Canal direct de colaborare și lămurire între elevi</span>
+                <span className="mentor-title" style={{ fontSize: '15px' }}>
+                  Discuții & Întrebări pe Material
+                </span>
+                <span className="mentor-sub">
+                  Pune întrebări autorului ({resource.authorName}) sau discută cu colegii pe marginea acestei resurse
+                </span>
               </div>
-              <span className="contact-pill">{resource.contactHandle}</span>
-            </div>
-            <div>
-              <button
-                className="btn btn-secondary btn-sm"
-                onClick={() => setShowPeerForm(!showPeerForm)}
-              >
-                {showPeerForm ? 'Ascunde Formularul' : 'Formulează o Întrebare pentru Autor'}
-              </button>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="contact-pill" title="Canal extern autor">
+                  {resource.contactHandle}
+                </span>
+              </div>
             </div>
 
-            {showPeerForm && (
-              <div style={{ marginTop: '14px' }}>
-                <textarea
-                  rows={2}
-                  className="apple-textarea"
-                  style={{ width: '100%' }}
-                  placeholder="Formulați punctual neclaritatea legată de acest material..."
-                  value={peerQuestion}
-                  onChange={(e) => setPeerQuestion(e.target.value)}
-                />
-                <div style={{ marginTop: '8px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                  <button className="btn btn-primary btn-sm" onClick={handleSendPeerQuestion}>
-                    Transmite Mesajul
-                  </button>
-                  {peerSent && (
-                    <span style={{ fontSize: '12px', fontWeight: 600, color: 'var(--apple-green)' }}>
-                      Mesajul a fost transmis autorului.
-                    </span>
-                  )}
+            {/* Listă Mesaje */}
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px',
+              maxHeight: '260px',
+              overflowY: 'auto',
+              padding: '12px',
+              borderRadius: 'var(--radius-md)',
+              backgroundColor: 'var(--apple-canvas)',
+              border: '1px solid var(--border-hairline)',
+              marginBottom: '16px'
+            }}>
+              {loadingMessages ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                  Se încarcă discuțiile...
                 </div>
-              </div>
-            )}
+              ) : messages.length === 0 ? (
+                <div style={{ padding: '16px', textAlign: 'center', color: 'var(--text-tertiary)', fontSize: '13px' }}>
+                  Nu există încă întrebări pe acest material. Fii primul care adresează o întrebare autorului!
+                </div>
+              ) : (
+                messages.map((m) => {
+                  const isAuthor = m.senderName === resource.authorName;
+                  const isMe = currentUser?.fullName && m.senderName === currentUser.fullName;
+                  const formattedTime = m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+                  return (
+                    <div
+                      key={m.id}
+                      style={{
+                        display: 'flex',
+                        flexDirection: 'column',
+                        alignSelf: isMe ? 'flex-end' : 'flex-start',
+                        maxWidth: '85%',
+                        padding: '10px 14px',
+                        borderRadius: 'var(--radius-md)',
+                        backgroundColor: isMe ? 'var(--apple-blue)' : 'var(--apple-card)',
+                        color: isMe ? '#ffffff' : 'var(--text-primary)',
+                        border: isMe ? 'none' : '1px solid var(--border-hairline)',
+                        boxShadow: 'var(--shadow-sm)'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', marginBottom: '4px' }}>
+                        <span style={{
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          color: isMe ? 'rgba(255, 255, 255, 0.9)' : 'var(--text-primary)'
+                        }}>
+                          {m.senderName} {isAuthor && '• (Autor)'}
+                        </span>
+                        <span style={{
+                          fontSize: '10px',
+                          color: isMe ? 'rgba(255, 255, 255, 0.7)' : 'var(--text-tertiary)'
+                        }}>
+                          {formattedTime}
+                        </span>
+                      </div>
+                      <p style={{
+                        fontSize: '13px',
+                        lineHeight: 1.45,
+                        margin: 0,
+                        whiteSpace: 'pre-wrap',
+                        wordBreak: 'break-word'
+                      }}>
+                        {m.message}
+                      </p>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            {/* Formular Trimitere Mesaj Nou */}
+            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+              <input
+                type="text"
+                className="apple-textarea"
+                style={{
+                  flex: 1,
+                  padding: '9px 14px',
+                  borderRadius: 'var(--radius-full)',
+                  fontSize: '13px',
+                  border: '1px solid var(--border-strong)',
+                  backgroundColor: 'var(--apple-card)'
+                }}
+                placeholder={`Adresează o întrebare lui ${resource.authorName}...`}
+                value={newMsgText}
+                onChange={(e) => setNewMsgText(e.target.value)}
+                disabled={sendingMsg}
+              />
+              <button
+                type="submit"
+                className="btn btn-primary btn-sm"
+                disabled={sendingMsg || !newMsgText.trim()}
+                style={{ padding: '8px 18px', whiteSpace: 'nowrap' }}
+              >
+                {sendingMsg ? 'Se trimite...' : 'Trimite'}
+              </button>
+            </form>
           </div>
         </div>
 
