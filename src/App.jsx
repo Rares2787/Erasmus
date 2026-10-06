@@ -1,10 +1,12 @@
 // ============================================================================
 // LER EduShare — Aplicație Principală React (Sincronizare în Timp Real)
 // Liceul Teoretic „Emil Racoviță” Vaslui | Erasmus+ DIGI-EQUAL
+// Suport Bilingv Complet (Română / Engleză)
 // ============================================================================
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from './context/AuthContext';
+import { useLanguage } from './context/LanguageContext';
 import { db } from './services/database';
 
 import Navbar from './components/Navbar';
@@ -36,6 +38,7 @@ function CountUp({ value, duration = 1200 }) {
 
 export default function App() {
   const { currentUser, isElev, isProfesor, isAdmin, isAuthenticated } = useAuth();
+  const { lang, t } = useLanguage();
 
   // Date din Baza de Date
   const [resources, setResources] = useState([]);
@@ -109,7 +112,7 @@ export default function App() {
       setResources(resData);
       setReports(repData);
     } catch (err) {
-      if (!silent) showToast('Eroare la sincronizarea bazei de date.', 'error');
+      if (!silent) showToast(t('toastSyncError'), 'error');
     } finally {
       if (!silent) setLoading(false);
     }
@@ -198,7 +201,7 @@ export default function App() {
   // Operațiuni Bază de Date Securizate
   async function handleAddResource(payload) {
     if (!isAuthenticated) {
-      showToast('Trebuie să fii autentificat pentru a propune o resursă.', 'warning');
+      showToast(t('toastLoginPrompt'), 'warning');
       setAuthInitialTab('login');
       setIsAuthOpen(true);
       return;
@@ -207,44 +210,44 @@ export default function App() {
     try {
       const created = await db.addResource(payload);
       setResources((prev) => [created, ...prev]);
-      showToast('Propunerea a fost înregistrată. Va fi redirecționată către administrator.', 'success');
+      showToast(t('toastProposalSent'), 'success');
     } catch (err) {
-      showToast('Eroare la salvarea resursei.', 'error');
+      showToast(t('toastSaveError'), 'error');
     }
   }
 
   async function handleAdminApprove(id) {
     if (!isAdmin) {
-      showToast('Acces interzis. Doar administratorul poate autoriza publicarea.', 'error');
+      showToast(t('toastAdminOnlyApprove'), 'error');
       return;
     }
     try {
       const updated = await db.updateResource(id, { status: 'approved' });
       setResources((prev) => prev.map((r) => (r.id === id ? { ...r, ...updated, status: 'approved' } : r)));
-      showToast('Resursa a fost autorizată și publicată în catalogul public.', 'success');
+      showToast(t('toastApproved'), 'success');
     } catch (err) {
-      showToast('Eroare la aprobare.', 'error');
+      showToast(t('toastApproveError'), 'error');
     }
   }
 
   async function handleAdminReject(id) {
     if (!isAdmin) {
-      showToast('Acces interzis. Doar administratorul poate respinge propuneri.', 'error');
+      showToast(t('toastAdminOnlyReject'), 'error');
       return;
     }
-    if (!confirm('Confirmați respingerea acestei propuneri didactice?')) return;
+    if (!confirm(t('confirmRejectProposal'))) return;
     try {
       const updated = await db.updateResource(id, { status: 'rejected' });
       setResources((prev) => prev.map((r) => (r.id === id ? { ...r, ...updated, status: 'rejected' } : r)));
-      showToast('Propunerea a fost respinsă.', 'warning');
+      showToast(t('toastRejected'), 'warning');
     } catch (err) {
-      showToast('Eroare la respingere.', 'error');
+      showToast(t('toastRejectError'), 'error');
     }
   }
 
   async function handleTeacherVerifyConfirm(id, { teacherName, teacherComment }) {
     if (!isProfesor) {
-      showToast('Acces interzis. Doar cadrele didactice pot acorda aviz metodic.', 'error');
+      showToast(t('toastTeacherOnlyVerify'), 'error');
       return;
     }
     try {
@@ -260,36 +263,36 @@ export default function App() {
             : r
         )
       );
-      showToast('Avizul didactic a fost acordat cu succes.', 'success');
+      showToast(t('toastVerifiedSuccess'), 'success');
     } catch (err) {
-      showToast('Eroare la validare.', 'error');
+      showToast(t('toastVerifyError'), 'error');
     }
   }
 
   async function handleTeacherReportConfirm(payload) {
     if (!isProfesor) {
-      showToast('Acces interzis. Doar cadrele didactice pot iniția sesizări metodice.', 'error');
+      showToast(t('toastTeacherOnlyReport'), 'error');
       return;
     }
     try {
       const newReport = await db.addReport(payload);
       setReports((prev) => [newReport, ...prev]);
       if (payload.targetRecipient === 'admin') {
-        showToast('Sesizarea a fost înaintată către administrator.', 'warning');
+        showToast(t('toastReportSentAdmin'), 'warning');
       } else {
-        showToast('Indicațiile de corectură au fost transmise elevului autor.', 'success');
+        showToast(t('toastReportSentAuthor'), 'success');
       }
     } catch (err) {
-      showToast('Eroare la transmiterea sesizării.', 'error');
+      showToast(t('toastReportError'), 'error');
     }
   }
 
   async function handleTakeDownResource(resourceId, reportId) {
     if (!isAdmin) {
-      showToast('Acces interzis. Doar administratorul poate retrage definitiv o resursă.', 'error');
+      showToast(t('toastAdminOnlyTakedown'), 'error');
       return;
     }
-    if (!confirm('Confirmați retragerea definitivă a acestei resurse din catalog?')) return;
+    if (!confirm(t('confirmTakedown'))) return;
     try {
       await db.deleteResource(resourceId);
       await db.resolveReport(reportId);
@@ -297,9 +300,9 @@ export default function App() {
       setReports((prev) =>
         prev.map((rep) => (rep.id === reportId ? { ...rep, status: 'resolved' } : rep))
       );
-      showToast('Resursa a fost retrasă din catalog.', 'error');
+      showToast(t('toastResourceRemoved'), 'error');
     } catch (err) {
-      showToast('Eroare la retragerea resursei.', 'error');
+      showToast(t('toastRemoveError'), 'error');
     }
   }
 
@@ -310,23 +313,23 @@ export default function App() {
       setReports((prev) =>
         prev.map((rep) => (rep.id === reportId ? { ...rep, status: 'resolved' } : rep))
       );
-      showToast('Sesizarea a fost arhivată.', 'success');
+      showToast(t('toastReportArchived'), 'success');
     } catch (err) {
-      showToast('Eroare la actualizarea sesizării.', 'error');
+      showToast(t('toastReportUpdateError'), 'error');
     }
   }
 
   async function handleAdminRemove(id) {
     if (!isAdmin) {
-      showToast('Acces interzis. Doar administratorul poate elimina resurse.', 'error');
+      showToast(t('toastAdminOnlyTakedown'), 'error');
       return;
     }
     try {
       await db.deleteResource(id);
       setResources((prev) => prev.filter((r) => r.id !== id));
-      showToast('Resursa a fost ștearsă din catalog.', 'error');
+      showToast(t('toastResourceRemoved'), 'error');
     } catch (err) {
-      showToast('Eroare la ștergerea resursei.', 'error');
+      showToast(t('toastDeleteError'), 'error');
     }
   }
 
@@ -350,9 +353,20 @@ export default function App() {
     return () => io.disconnect();
   }, [activeTab, filteredCatalog, loading, reports, mySubmissions, pendingAdminResources]);
 
+  // Discipline options
+  const subjectOptions = [
+    { id: 'all', label: t('allSubjects') },
+    { id: 'Informatica (C++)', label: t('subjCpp') },
+    { id: 'Python', label: t('subjPython') },
+    { id: 'Matematica', label: t('subjMath') },
+    { id: 'Fizica', label: t('subjPhysics') },
+    { id: 'Limba Romana', label: t('subjRomanian') },
+    { id: 'Chimie / Biologie', label: t('subjSciences') }
+  ];
+
   return (
     <>
-      {/* Navigație fără comutator demo */}
+      {/* Navigație cu slider bilingv și comutator temă */}
       <Navbar
         pendingAdminCount={isAdmin ? pendingAdminResources.length : 0}
         onOpenAddModal={() => setIsAddOpen(true)}
@@ -372,7 +386,7 @@ export default function App() {
               className="status-indicator"
               style={{ backgroundColor: isAuthenticated ? 'var(--apple-green)' : 'var(--text-tertiary)' }}
             ></span>
-            <span className="session-label">Sesiune:</span>
+            <span className="session-label">{t('sessionLabel')}</span>
             {isAuthenticated ? (
               <>
                 <strong>{currentUser.fullName}</strong>
@@ -384,17 +398,17 @@ export default function App() {
               </>
             ) : (
               <>
-                <strong>Vizitator Neautentificat</strong>
-                <span className="session-role-badge">ACCES PUBLIC</span>
+                <strong>{t('unauthenticatedVisitor')}</strong>
+                <span className="session-role-badge">{t('publicAccess')}</span>
               </>
             )}
           </div>
 
           <div className="session-capability">
-            {!isAuthenticated && 'Consultare catalog public. Conectați-vă pentru a propune materiale didactice.'}
-            {isElev && 'Rol Elev: Consultare catalog, descărcare resurse, propunere materiale și mentorat peer-to-peer.'}
-            {isProfesor && 'Rol Profesor: Validare metodică a resurselor, acordare avize didactice și semnalare neconformități.'}
-            {isAdmin && 'Rol Administrator: Autorizare inițială a resurselor propuse și gestionare cereri de retragere.'}
+            {!isAuthenticated && t('capVisitor')}
+            {isElev && t('capElev')}
+            {isProfesor && t('capProfesor')}
+            {isAdmin && t('capAdmin')}
           </div>
         </div>
       </section>
@@ -403,9 +417,9 @@ export default function App() {
       <section className="hero-section">
         <div className="container hero-inner">
           <div>
-            <div className="kicker">Platformă Instituțională de Învățare Colaborativă</div>
+            <div className="kicker">{t('heroKicker')}</div>
             <h1 className="hero-title">
-              {['Resurse didactice validate.', 'Egalitate de șanse în educație.'].map((line, li) => (
+              {[t('heroLine1'), t('heroLine2')].map((line, li) => (
                 <span key={li} className="hero-line">
                   {line.split(' ').map((w, wi) => (
                     <span key={wi} className="hero-word" style={{ animationDelay: `${(li * 4 + wi) * 70}ms` }}>{w}&nbsp;</span>
@@ -414,7 +428,7 @@ export default function App() {
               ))}
             </h1>
             <p className="hero-description">
-              Dezvoltat în cadrul mobilității Erasmus+ <strong>DIGI-EQUAL</strong>, sistemul conectează elevii Liceului Teoretic „Emil Racoviță” prin materiale de studiu riguros structurate, verificate metodologic de cadrele didactice pentru eliminarea erorilor științifice.
+              {t('heroDescription')}
             </p>
 
             {/* Căutare Apple Style */}
@@ -425,7 +439,7 @@ export default function App() {
               </svg>
               <input
                 type="text"
-                placeholder="Căutare după disciplină, concept sau titlu (ex: vectori, grafuri, BAC)..."
+                placeholder={t('searchPlaceholder')}
                 value={tempSearch}
                 onChange={(e) => setTempSearch(e.target.value)}
                 onKeyDown={(e) => {
@@ -435,7 +449,7 @@ export default function App() {
               <button
                 className="palette-hint"
                 onClick={() => setIsPaletteOpen(true)}
-                title="Căutare rapidă"
+                title={t('quickSearch')}
               >
                 <kbd>Ctrl K</kbd>
               </button>
@@ -443,7 +457,7 @@ export default function App() {
                 className="btn btn-primary btn-search"
                 onClick={() => setSearchQuery(tempSearch)}
               >
-                Căutare
+                {t('searchButton')}
               </button>
             </div>
           </div>
@@ -452,18 +466,18 @@ export default function App() {
           <div className="metrics-grid">
             <div className="metric-card">
               <span className="metric-value"><CountUp value={verifiedResources.length} /></span>
-              <span className="metric-label">Resurse Verificate</span>
-              <span className="metric-sub">Aviz didactic acordat</span>
+              <span className="metric-label">{t('metricVerified')}</span>
+              <span className="metric-sub">{t('metricVerifiedSub')}</span>
             </div>
             <div className="metric-card">
               <span className="metric-value"><CountUp value={approvedResources.length} /></span>
-              <span className="metric-label">Publicate în Catalog</span>
-              <span className="metric-sub">Disponibile comunității</span>
+              <span className="metric-label">{t('metricApproved')}</span>
+              <span className="metric-sub">{t('metricApprovedSub')}</span>
             </div>
             <div className="metric-card">
               <span className="metric-value"><CountUp value={14} /></span>
-              <span className="metric-label">Mentori Voluntari</span>
-              <span className="metric-sub">Sprijin reciproc elev-elev</span>
+              <span className="metric-label">{t('metricMentors')}</span>
+              <span className="metric-sub">{t('metricMentorsSub')}</span>
             </div>
           </div>
         </div>
@@ -476,7 +490,7 @@ export default function App() {
             className={`tab-button ${activeTab === 'catalog' ? 'active' : ''}`}
             onClick={() => setActiveTab('catalog')}
           >
-            <span>Catalog Resurse</span>
+            <span>{t('tabCatalog')}</span>
           </button>
 
           {/* Tab vizibil EXCLUSIV pentru Administrator */}
@@ -485,7 +499,7 @@ export default function App() {
               className={`tab-button ${activeTab === 'adminQueue' ? 'active' : ''}`}
               onClick={() => setActiveTab('adminQueue')}
             >
-              <span>Moderare Admin</span>
+              <span>{t('tabAdminQueue')}</span>
               {pendingAdminResources.length > 0 && (
                 <span className="tab-count">{pendingAdminResources.length}</span>
               )}
@@ -498,7 +512,7 @@ export default function App() {
               className={`tab-button ${activeTab === 'reportsQueue' ? 'active' : ''}`}
               onClick={() => setActiveTab('reportsQueue')}
             >
-              <span>Sesizări Profesori</span>
+              <span>{t('tabReportsQueue')}</span>
               {openReports.length > 0 && (
                 <span className="tab-count warning">{openReports.length}</span>
               )}
@@ -511,7 +525,7 @@ export default function App() {
               className={`tab-button ${activeTab === 'mySubmissions' ? 'active' : ''}`}
               onClick={() => setActiveTab('mySubmissions')}
             >
-              <span>Materialele Mele</span>
+              <span>{t('tabMySubmissions')}</span>
               {mySubmissions.length > 0 && (
                 <span className="tab-count" style={{ background: 'var(--text-secondary)' }}>
                   {mySubmissions.length}
@@ -526,15 +540,7 @@ export default function App() {
           <div>
             <div className="filter-toolbar">
               <div className="discipline-chips">
-                {[
-                  { id: 'all', label: 'Toate disciplinele' },
-                  { id: 'Informatica (C++)', label: 'Informatică (C++)' },
-                  { id: 'Python', label: 'Python' },
-                  { id: 'Matematica', label: 'Matematică' },
-                  { id: 'Fizica', label: 'Fizică' },
-                  { id: 'Limba Romana', label: 'Limba Română' },
-                  { id: 'Chimie / Biologie', label: 'Științe Exacte' }
-                ].map((chip) => (
+                {subjectOptions.map((chip) => (
                   <button
                     key={chip.id}
                     className={`chip ${activeSubject === chip.id ? 'active' : ''}`}
@@ -551,9 +557,9 @@ export default function App() {
                   onChange={(e) => setFilterVerification(e.target.value)}
                   className="apple-select"
                 >
-                  <option value="all">Toate materialele</option>
-                  <option value="verified">Doar verificate de profesor</option>
-                  <option value="pending_teacher">În curs de avizare didactică</option>
+                  <option value="all">{t('allMaterials')}</option>
+                  <option value="verified">{t('onlyVerified')}</option>
+                  <option value="pending_teacher">{t('pendingVerification')}</option>
                 </select>
 
                 <select
@@ -561,18 +567,18 @@ export default function App() {
                   onChange={(e) => setFilterGrade(e.target.value)}
                   className="apple-select"
                 >
-                  <option value="all">Toate clasele</option>
-                  <option value="Clasa a IX-a">Clasa a IX-a</option>
-                  <option value="Clasa a X-a">Clasa a X-a</option>
-                  <option value="Clasa a XI-a">Clasa a XI-a</option>
-                  <option value="Clasa a XII-a (BAC)">Clasa a XII-a (BAC)</option>
+                  <option value="all">{t('allGrades')}</option>
+                  <option value="Clasa a IX-a">{t('grade9')}</option>
+                  <option value="Clasa a X-a">{t('grade10')}</option>
+                  <option value="Clasa a XI-a">{t('grade11')}</option>
+                  <option value="Clasa a XII-a (BAC)">{t('grade12')}</option>
                 </select>
               </div>
             </div>
 
             {loading ? (
               <div className="empty-view">
-                <p className="empty-desc">Se încarcă catalogul de resurse din baza de date...</p>
+                <p className="empty-desc">{t('loadingCatalog')}</p>
               </div>
             ) : filteredCatalog.length === 0 ? (
               <div className="empty-view">
@@ -582,8 +588,8 @@ export default function App() {
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
                 </div>
-                <h3 className="empty-title">Niciun rezultat găsit</h3>
-                <p className="empty-desc">Nu există materiale conforme cu filtrele selectate.</p>
+                <h3 className="empty-title">{t('noResults')}</h3>
+                <p className="empty-desc">{t('noResultsDesc')}</p>
                 <button
                   className="btn btn-secondary"
                   onClick={() => {
@@ -594,7 +600,7 @@ export default function App() {
                     setTempSearch('');
                   }}
                 >
-                  Resetează filtrele
+                  {t('resetFilters')}
                 </button>
               </div>
             ) : (
@@ -619,19 +625,16 @@ export default function App() {
           <div>
             <div className="panel-header-card">
               <div className="panel-title-wrap">
-                <span className="panel-tag">Panou de Securitate și Moderare</span>
-                <h3>Fluxul de Aprobare Inițială (Administrator)</h3>
-                <p>
-                  Conform procedurii stabilite: nicio resursă încărcată de elevi nu se publică fără validarea conformității de către administrator. 
-                  Verificați integritatea conținutului înainte de autorizarea publicării în catalogul liceului.
-                </p>
+                <span className="panel-tag">{t('adminPanelTag')}</span>
+                <h3>{t('adminPanelTitle')}</h3>
+                <p>{t('adminPanelDesc')}</p>
               </div>
             </div>
 
             {pendingAdminResources.length === 0 ? (
               <div className="empty-view">
-                <h3 className="empty-title">Niciun material în așteptare</h3>
-                <p className="empty-desc">Toate resursele propuse de elevi au fost verificate și autorizate.</p>
+                <h3 className="empty-title">{t('adminEmptyTitle')}</h3>
+                <p className="empty-desc">{t('adminEmptyDesc')}</p>
               </div>
             ) : (
               <div className="admin-stream">
@@ -642,33 +645,33 @@ export default function App() {
                         <span className="tag-badge">{item.subject} &bull; {item.grade}</span>
                         <h4 className="stream-title">{item.title}</h4>
                         <p className="stream-meta">
-                          Autor propunere: <strong>{item.authorName}</strong> | Format: {item.type} | Contact: {item.contactHandle}
+                          {t('adminAuthorLabel')} <strong>{item.authorName}</strong> | {t('adminFormatLabel')} {item.type} | {t('adminContactLabel')} {item.contactHandle}
                         </p>
                       </div>
-                      <span className="status-badge pending-admin">În așteptare autorizare</span>
+                      <span className="status-badge pending-admin">{t('adminPendingBadge')}</span>
                     </div>
 
                     <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{item.description}</p>
 
                     <div>
                       <strong style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '6px' }}>
-                        Previzualizare Conținut Tehnic:
+                        {t('adminTechPreview')}
                       </strong>
                       <div className="stream-content-box">{item.content}</div>
                     </div>
 
                     {item.link && (
                       <div style={{ fontSize: '13px', color: 'var(--apple-blue)' }}>
-                        Referință: <a href={item.link} target="_blank" rel="noopener noreferrer" className="file-link">{item.link}</a>
+                        {t('adminReference')} <a href={item.link} target="_blank" rel="noopener noreferrer" className="file-link">{item.link}</a>
                       </div>
                     )}
 
                     <div className="stream-actions">
                       <button className="btn btn-secondary btn-sm" onClick={() => handleAdminReject(item.id)}>
-                        Respinge Propunerea
+                        {t('adminRejectBtn')}
                       </button>
                       <button className="btn btn-primary btn-sm" onClick={() => handleAdminApprove(item.id)}>
-                        Autorizează Publicarea în Catalog
+                        {t('adminApproveBtn')}
                       </button>
                     </div>
                   </div>
@@ -683,19 +686,16 @@ export default function App() {
           <div>
             <div className="panel-header-card">
               <div className="panel-title-wrap">
-                <span className="panel-tag warning">Registru Sesizări Metodice</span>
-                <h3>Observații Cadre Didactice și Solicitări de Retragere</h3>
-                <p>
-                  Profesorii evaluează conținutul științific al resurselor. În cazul identificării unor erori de conținut, 
-                  aceștia solicită corectarea directă de către autor sau retragerea imediată a materialului de către administrator.
-                </p>
+                <span className="panel-tag warning">{t('reportsPanelTag')}</span>
+                <h3>{t('reportsPanelTitle')}</h3>
+                <p>{t('reportsPanelDesc')}</p>
               </div>
             </div>
 
             {reports.length === 0 ? (
               <div className="empty-view">
-                <h3 className="empty-title">Registru curat</h3>
-                <p className="empty-desc">Nu există sesizări active înaintate de cadrele didactice.</p>
+                <h3 className="empty-title">{t('reportsEmptyTitle')}</h3>
+                <p className="empty-desc">{t('reportsEmptyDesc')}</p>
               </div>
             ) : (
               <div className="reports-stream">
@@ -708,21 +708,21 @@ export default function App() {
                       <div className="stream-top">
                         <div>
                           <span className={`status-badge ${isUrgent ? 'pending-admin' : 'pending-teacher'}`}>
-                            {isUrgent ? 'Severitate Ridicată (Solicitare Retragere)' : 'Observație Metodică (Corectură)'}
+                            {isUrgent ? t('reportUrgentBadge') : t('reportCorrectionBadge')}
                           </span>
-                          <h4 className="stream-title">Sesizare metodologică: „{rep.resourceTitle}”</h4>
+                          <h4 className="stream-title">{t('reportTitlePrefix')} „{rep.resourceTitle}”</h4>
                           <p className="stream-meta">
-                            Inițiator: <strong>{rep.teacherName}</strong> &bull; Destinatar: <strong>{rep.targetRecipient === 'admin' ? 'Administrator (procedură retragere)' : 'Elevul autor'}</strong>
+                            {t('reportInitiator')} <strong>{rep.teacherName}</strong> &bull; {t('reportRecipient')} <strong>{rep.targetRecipient === 'admin' ? t('reportRecipientAdmin') : t('reportRecipientAuthor')}</strong>
                           </p>
                         </div>
                         <span className={`status-badge ${isResolved ? 'verified' : 'pending-teacher'}`}>
-                          {isResolved ? 'Rezolvat' : 'Activ'}
+                          {isResolved ? t('reportStatusResolved') : t('reportStatusActive')}
                         </span>
                       </div>
 
                       <div style={{ backgroundColor: 'var(--apple-subtle)', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', fontSize: '13px', color: 'var(--text-primary)' }}>
                         <strong style={{ display: 'block', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>
-                          Constatări didactice:
+                          {t('reportFindings')}
                         </strong>
                         {rep.details}
                       </div>
@@ -733,7 +733,7 @@ export default function App() {
                             className="btn btn-danger btn-sm"
                             onClick={() => handleTakeDownResource(rep.resourceId, rep.id)}
                           >
-                            Retrage Resursa din Catalog
+                            {t('reportTakedownBtn')}
                           </button>
                         )}
                         {!isResolved && (
@@ -741,7 +741,7 @@ export default function App() {
                             className="btn btn-secondary btn-sm"
                             onClick={() => handleResolveReport(rep.id)}
                           >
-                            Arhivează Sesizarea
+                            {t('reportArchiveBtn')}
                           </button>
                         )}
                       </div>
@@ -758,16 +758,16 @@ export default function App() {
           <div>
             <div className="panel-header-card subtle">
               <div className="panel-title-wrap">
-                <span className="panel-tag">Registru Personal</span>
-                <h3>Materialele înaintate de {currentUser.fullName}</h3>
-                <p>Urmăriți parcursul administrativ și pedagogic al contribuțiilor dumneavoastră.</p>
+                <span className="panel-tag">{t('mySubmissionsTag')}</span>
+                <h3>{t('mySubmissionsTitle')} {currentUser.fullName}</h3>
+                <p>{t('mySubmissionsDesc')}</p>
               </div>
             </div>
 
             {mySubmissions.length === 0 ? (
               <div className="empty-view">
-                <h3 className="empty-title">Nu ați înaintat încă propuneri</h3>
-                <p className="empty-desc">Folosiți butonul „Propune Material” din bara superioară pentru a trimite o resursă didactică.</p>
+                <h3 className="empty-title">{t('mySubmissionsEmptyTitle')}</h3>
+                <p className="empty-desc">{t('mySubmissionsEmptyDesc')}</p>
               </div>
             ) : (
               <div className="cards-grid">
@@ -839,11 +839,11 @@ export default function App() {
       <footer className="site-footer">
         <div className="container footer-inner">
           <div className="footer-legal">
-            <strong>LER EduShare</strong> — Sistem Didactic Institutional
-            <p>Liceul Teoretic "Emil Racovita" Vaslui.</p>
+            <strong>{t('footerSystemTitle')}</strong>
+            <p>{t('footerSchool')}</p>
           </div>
           <div className="footer-meta">
-            <span>Securitate pe Roluri: Elev &bull; Cadru Didactic &bull; Administrator</span>
+            <span>{t('footerRoles')}</span>
           </div>
         </div>
       </footer>

@@ -1,9 +1,11 @@
 // ============================================================================
 // LER EduShare — Componentă Card Resursă Didactică (Cupertino Style)
+// Suport Bilingv (Română / Engleză)
 // ============================================================================
 
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function ResourceCard({
   resource,
@@ -13,14 +15,15 @@ export default function ResourceCard({
   onAdminRemove
 }) {
   const { isElev, isProfesor, isAdmin } = useAuth();
+  const { t } = useLanguage();
 
   let statusBadge = null;
   if (resource.status === 'pending_admin') {
-    statusBadge = <span className="status-badge pending-admin">În așteptare administrator</span>;
+    statusBadge = <span className="status-badge pending-admin">{t('badgePendingAdmin')}</span>;
   } else if (resource.isVerified) {
-    statusBadge = <span className="status-badge verified">Verificat de profesor</span>;
+    statusBadge = <span className="status-badge verified">{t('badgeVerified')}</span>;
   } else {
-    statusBadge = <span className="status-badge pending-teacher">În așteptare aviz didactic</span>;
+    statusBadge = <span className="status-badge pending-teacher">{t('badgePendingTeacher')}</span>;
   }
 
   return (
@@ -29,7 +32,7 @@ export default function ResourceCard({
         <div className="card-header-line">
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
             <span className="tag-badge">{resource.subject} &bull; {resource.grade}</span>
-            {(resource.type === 'Document PDF & Fişă' || resource.attachment || (resource.link && resource.link.includes('pdf'))) && (
+            {(resource.type === 'Document PDF & Fişă' || resource.type === 'PDF Document & Worksheet' || resource.attachment || (resource.link && resource.link.includes('pdf'))) && (
               <span className="tag-badge" style={{ backgroundColor: 'var(--apple-blue-subtle)', color: 'var(--apple-blue)', fontWeight: 700 }}>
                 PDF
               </span>
@@ -43,7 +46,7 @@ export default function ResourceCard({
 
         {resource.isVerified && resource.verifiedBy && (
           <div className="evaluator-strip">
-            <span>Avizat de:</span> {resource.verifiedBy}
+            <span>{t('cardCertifiedBy')}</span> {resource.verifiedBy}
           </div>
         )}
 
@@ -59,27 +62,27 @@ export default function ResourceCard({
       <div className="card-action-bar">
         {isElev && (
           <button className="btn btn-primary btn-sm" onClick={() => onViewDetail(resource)}>
-            Consultă Resursa
+            {t('cardViewResource')}
           </button>
         )}
 
         {isProfesor && (
           <>
             <button className="btn btn-secondary btn-sm" onClick={() => onViewDetail(resource)}>
-              Detalii
+              {t('cardDetails')}
             </button>
             {!resource.isVerified ? (
               <>
                 <button className="btn btn-success btn-sm" onClick={() => onTeacherVerify(resource)}>
-                  Acordă Aviz
+                  {t('cardGrantApproval')}
                 </button>
-                <button className="btn btn-danger btn-sm" onClick={() => onTeacherReport(resource)} title="Semnalează neconformitate metodologică">
-                  Semnalează
+                <button className="btn btn-danger btn-sm" onClick={() => onTeacherReport(resource)} title={t('cardReport')}>
+                  {t('cardReport')}
                 </button>
               </>
             ) : (
               <button className="btn btn-danger btn-sm" onClick={() => onTeacherReport(resource)}>
-                Solicită Retragerea
+                {t('cardRequestTakedown')}
               </button>
             )}
           </>
@@ -88,10 +91,17 @@ export default function ResourceCard({
         {isAdmin && (
           <>
             <button className="btn btn-secondary btn-sm" onClick={() => onViewDetail(resource)}>
-              Detalii
+              {t('cardDetails')}
             </button>
-            <button className="btn btn-danger btn-sm" onClick={() => onAdminRemove(resource.id)}>
-              Elimină din Catalog
+            <button
+              className="btn btn-danger btn-sm"
+              onClick={() => {
+                if (confirm(t('confirmRemoveCard'))) {
+                  onAdminRemove(resource.id);
+                }
+              }}
+            >
+              {t('cardRemoveCatalog')}
             </button>
           </>
         )}

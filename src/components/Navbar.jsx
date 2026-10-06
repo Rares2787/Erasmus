@@ -1,9 +1,11 @@
 // ============================================================================
 // LER EduShare — Navigație Instituțională Cupertino (Securitate Strictă)
+// Suport Bilingv (Română / Engleză cu Slider) & Temă Dark/Light
 // ============================================================================
 
 import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function Navbar({
   pendingAdminCount,
@@ -13,11 +15,12 @@ export default function Navbar({
   onToggleTheme
 }) {
   const { currentUser, isElev, isAdmin, logout } = useAuth();
+  const { lang, setLanguage, t } = useLanguage();
 
   function getRoleLabel(role) {
-    if (role === 'elev') return 'Elev';
-    if (role === 'profesor') return 'Profesor';
-    if (role === 'admin') return 'Administrator';
+    if (role === 'elev') return t('roleElev');
+    if (role === 'profesor') return t('roleProfesor');
+    if (role === 'admin') return t('roleAdmin');
     return role;
   }
 
@@ -33,18 +36,49 @@ export default function Navbar({
               </svg>
             </div>
             <div className="brand-text">
-              <span className="brand-name">EduShare</span>
-              <span className="brand-context">Liceul Teoretic „Emil Racoviță”</span>
+              <span className="brand-name">{t('brandName')}</span>
+              <span className="brand-context">{t('brandContext')}</span>
             </div>
           </div>
 
           {/* Acțiuni de Navigație și Stare Autentificare */}
           <div className="nav-actions">
+            {/* Slider Comutare Limbă (RO / EN) */}
+            <div
+              className="lang-slider-container"
+              role="radiogroup"
+              aria-label={t('langAria')}
+              title={t('langAria')}
+            >
+              <div
+                className={`lang-slider-pill ${lang === 'ro' ? 'is-ro' : 'is-en'}`}
+                aria-hidden="true"
+              />
+              <button
+                type="button"
+                className={`lang-slider-btn ${lang === 'ro' ? 'active' : ''}`}
+                onClick={() => setLanguage('ro')}
+                role="radio"
+                aria-checked={lang === 'ro'}
+              >
+                RO
+              </button>
+              <button
+                type="button"
+                className={`lang-slider-btn ${lang === 'en' ? 'active' : ''}`}
+                onClick={() => setLanguage('en')}
+                role="radio"
+                aria-checked={lang === 'en'}
+              >
+                EN
+              </button>
+            </div>
+
             {/* Buton Dark / Light Theme */}
             <button
               className="theme-toggle-btn"
               onClick={onToggleTheme}
-              title={theme === 'dark' ? 'Comută pe Mod Clar (Light)' : 'Comută pe Mod Întunecat (Dark)'}
+              title={theme === 'dark' ? t('toggleThemeLight') : t('toggleThemeDark')}
               aria-label="Comută tema"
             >
               {theme === 'dark' ? (
@@ -68,14 +102,14 @@ export default function Navbar({
               )}
             </button>
 
-            {/* Buton Propune Material (Disponibil pentru Elevi și Administratori logați) */}
+            {/* Buton Propune Material */}
             {(isElev || isAdmin) && (
               <button className="btn btn-primary" onClick={onOpenAddModal}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <line x1="12" y1="5" x2="12" y2="19"></line>
                   <line x1="5" y1="12" x2="19" y2="12"></line>
                 </svg>
-                <span>Propune Material</span>
+                <span>{t('proposeMaterial')}</span>
               </button>
             )}
 
@@ -96,9 +130,9 @@ export default function Navbar({
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={logout}
-                  title="Deconectare din contul curent"
+                  title={t('logout')}
                 >
-                  Deconectare
+                  {t('logout')}
                 </button>
               </div>
             ) : (
@@ -107,13 +141,13 @@ export default function Navbar({
                   className="btn btn-primary btn-sm"
                   onClick={() => onOpenAuthModal('login')}
                 >
-                  Conectare
+                  {t('login')}
                 </button>
                 <button
                   className="btn btn-secondary btn-sm"
                   onClick={() => onOpenAuthModal('register')}
                 >
-                  Înregistrare
+                  {t('register')}
                 </button>
               </div>
             )}

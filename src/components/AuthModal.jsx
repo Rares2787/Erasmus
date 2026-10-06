@@ -1,12 +1,15 @@
 // ============================================================================
 // LER EduShare — Modale Autentificare & Înregistrare (Securitate Strictă)
+// Suport Bilingv (Română / Engleză)
 // ============================================================================
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function AuthModal({ isOpen, onClose, initialTab = 'login', onShowToast }) {
   const { login, register } = useAuth();
+  const { t } = useLanguage();
   const [tab, setTab] = useState(initialTab); // 'login' | 'register'
 
   // Stare formular login
@@ -30,7 +33,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
     setLoading(true);
     try {
       await login(loginEmail, loginPass);
-      onShowToast('Autentificare realizată cu succes.', 'success');
+      onShowToast(t('toastLoginSuccess'), 'success');
       onClose();
       setLoginEmail('');
       setLoginPass('');
@@ -49,12 +52,12 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
         fullName: regName,
         email: regEmail,
         password: regPass,
-        role: regRole, // Doar 'elev' sau 'profesor'
+        role: regRole,
         classGrade: regRole === 'elev' ? regGrade : null,
         department: regRole === 'profesor' ? regDept : null,
         contactHandle: regContact || (regRole === 'elev' ? 'Discord: @elev.ler' : 'Teams: @prof.ler')
       });
-      onShowToast('Contul a fost creat și autentificat cu succes.', 'success');
+      onShowToast(t('toastRegisterSuccess'), 'success');
       onClose();
       setRegName('');
       setRegEmail('');
@@ -72,11 +75,11 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-top">
           <div>
-            <h3 className="modal-title">Cont Instituțional EduShare</h3>
-            <p className="modal-sub">Autentificare în sistemul educațional al Liceului Teoretic „Emil Racoviță”</p>
+            <h3 className="modal-title">{t('authTitle')}</h3>
+            <p className="modal-sub">{t('authSub')}</p>
           </div>
-          <button className="btn-close" onClick={onClose} aria-label="Închide">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button className="btn-close" onClick={onClose} aria-label={t('modalCloseBtn')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -91,73 +94,79 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
               style={{ flex: 1, justifyContent: 'center' }}
               onClick={() => setTab('login')}
             >
-              Autentificare
+              {t('authTabLogin')}
             </button>
             <button
               className={`segmented-item ${tab === 'register' ? 'active' : ''}`}
               style={{ flex: 1, justifyContent: 'center' }}
               onClick={() => setTab('register')}
             >
-              Înregistrare Cont Nou
+              {t('authTabRegister')}
             </button>
           </div>
         </div>
 
         {tab === 'login' ? (
-          <div style={{ padding: '24px' }}>
-            <form onSubmit={handleLoginSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-              <div className="field-group">
-                <label>Adresă Email Instituțională *</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="ex: elev@ler.ro, profesor@ler.ro sau admin@ler.ro"
-                  value={loginEmail}
-                  onChange={(e) => setLoginEmail(e.target.value)}
-                />
-              </div>
+          <form onSubmit={handleLoginSubmit} className="modal-form">
+            <div className="field-group">
+              <label>{t('authEmailLabel')}</label>
+              <input
+                type="email"
+                required
+                placeholder="elev@ler.ro sau profesor@ler.ro"
+                value={loginEmail}
+                onChange={(e) => setLoginEmail(e.target.value)}
+              />
+            </div>
 
-              <div className="field-group">
-                <label>Parolă *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Introduceți parola..."
-                  value={loginPass}
-                  onChange={(e) => setLoginPass(e.target.value)}
-                />
-              </div>
+            <div className="field-group">
+              <label>{t('authPassLabel')}</label>
+              <input
+                type="password"
+                required
+                placeholder="••••••••"
+                value={loginPass}
+                onChange={(e) => setLoginPass(e.target.value)}
+              />
+            </div>
 
-              {/* Ghid informativ discret privind conturile existente */}
-              <div style={{ background: 'var(--apple-subtle)', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: '11px', color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
-                <strong>Conturi configurate în sistem:</strong><br />
-                &bull; <strong>Elev</strong>: elev@ler.ro (parolă: elev123)<br />
-                &bull; <strong>Profesor</strong>: profesor@ler.ro (parolă: prof123)<br />
-                &bull; <strong>Administrator</strong>: admin@ler.ro (parolă: admin123)
-              </div>
+            <div style={{
+              backgroundColor: 'var(--apple-subtle)',
+              padding: '12px 14px',
+              borderRadius: 'var(--radius-sm)',
+              fontSize: '12px',
+              lineHeight: 1.5,
+              color: 'var(--text-secondary)'
+            }}>
+              <strong style={{ display: 'block', color: 'var(--text-primary)', marginBottom: '4px' }}>
+                {t('authDemoTitle')}
+              </strong>
+              • Elev: <code>elev@ler.ro</code> / <code>elev123</code><br />
+              • Profesor: <code>profesor@ler.ro</code> / <code>prof123</code><br />
+              • Administrator: <code>admin@ler.ro</code> / <code>admin123</code>
+            </div>
 
-              <div style={{ marginTop: '10px', display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" className="btn btn-secondary" onClick={onClose}>
-                  Anulare
-                </button>
-                <button type="submit" className="btn btn-primary" disabled={loading}>
-                  {loading ? 'Se verifică datele...' : 'Conectare'}
-                </button>
-              </div>
-            </form>
-          </div>
+            <div className="modal-bottom" style={{ padding: 0 }}>
+              <button type="button" className="btn btn-secondary" onClick={onClose}>
+                {t('addCancelBtn')}
+              </button>
+              <button type="submit" className="btn btn-primary" disabled={loading}>
+                {loading ? t('authProcessing') : t('authLoginSubmit')}
+              </button>
+            </div>
+          </form>
         ) : (
           <form onSubmit={handleRegisterSubmit} className="modal-form">
             <div className="field-group">
-              <label>Statut în Instituție (Rol) *</label>
-              <div className="segmented-control" style={{ width: '100%', justifyContent: 'center' }}>
+              <label>{t('authRoleLabel')}</label>
+              <div className="segmented-control" style={{ width: '100%' }}>
                 <button
                   type="button"
                   className={`segmented-item ${regRole === 'elev' ? 'active' : ''}`}
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => setRegRole('elev')}
                 >
-                  Elev (Liceu)
+                  {t('roleElev')}
                 </button>
                 <button
                   type="button"
@@ -165,86 +174,83 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
                   style={{ flex: 1, justifyContent: 'center' }}
                   onClick={() => setRegRole('profesor')}
                 >
-                  Cadru Didactic (Profesor)
+                  {t('roleProfesor')}
                 </button>
               </div>
             </div>
 
-            <div className="form-grid">
-              <div className="field-group span-2">
-                <label>Nume și Prenume *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Ex: Andrei Vasilescu"
-                  value={regName}
-                  onChange={(e) => setRegName(e.target.value)}
-                />
-              </div>
-
-              <div className="field-group">
-                <label>Adresă Email *</label>
-                <input
-                  type="email"
-                  required
-                  placeholder="andrei@ler.ro"
-                  value={regEmail}
-                  onChange={(e) => setRegEmail(e.target.value)}
-                />
-              </div>
-
-              <div className="field-group">
-                <label>Parolă *</label>
-                <input
-                  type="password"
-                  required
-                  placeholder="Minim 6 caractere"
-                  value={regPass}
-                  onChange={(e) => setRegPass(e.target.value)}
-                />
-              </div>
-
-              {regRole === 'elev' ? (
-                <div className="field-group">
-                  <label>Clasă de Proveniență *</label>
-                  <select value={regGrade} onChange={(e) => setRegGrade(e.target.value)}>
-                    <option value="Clasa a IX-a">Clasa a IX-a</option>
-                    <option value="Clasa a X-a">Clasa a X-a</option>
-                    <option value="Clasa a XI-a">Clasa a XI-a</option>
-                    <option value="Clasa a XII-a">Clasa a XII-a</option>
-                  </select>
-                </div>
-              ) : (
-                <div className="field-group">
-                  <label>Catedră / Specialitate *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ex: Catedra de Informatică"
-                    value={regDept}
-                    onChange={(e) => setRegDept(e.target.value)}
-                  />
-                </div>
-              )}
-
-              <div className="field-group">
-                <label>Canal de Contact (Discord / Teams) *</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Discord: @nume sau Teams"
-                  value={regContact}
-                  onChange={(e) => setRegContact(e.target.value)}
-                />
-              </div>
+            <div className="field-group">
+              <label>{t('authNameLabel')}</label>
+              <input
+                type="text"
+                required
+                placeholder="Ex: Andrei Popescu"
+                value={regName}
+                onChange={(e) => setRegName(e.target.value)}
+              />
             </div>
 
-            <div className="modal-bottom">
+            <div className="field-group">
+              <label>{t('authEmailLabel')}</label>
+              <input
+                type="email"
+                required
+                placeholder="adresa@ler.ro"
+                value={regEmail}
+                onChange={(e) => setRegEmail(e.target.value)}
+              />
+            </div>
+
+            <div className="field-group">
+              <label>{t('authPassLabel')}</label>
+              <input
+                type="password"
+                required
+                placeholder="Minim 6 caractere"
+                value={regPass}
+                onChange={(e) => setRegPass(e.target.value)}
+              />
+            </div>
+
+            {regRole === 'elev' ? (
+              <div className="field-group">
+                <label>{t('authGradeLabel')}</label>
+                <select value={regGrade} onChange={(e) => setRegGrade(e.target.value)}>
+                  <option value="Clasa a IX-a">{t('grade9')}</option>
+                  <option value="Clasa a X-a">{t('grade10')}</option>
+                  <option value="Clasa a XI-a">{t('grade11')}</option>
+                  <option value="Clasa a XII-a">{t('grade12')}</option>
+                </select>
+              </div>
+            ) : (
+              <div className="field-group">
+                <label>{t('authDeptLabel')}</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Ex: Catedra de Matematică"
+                  value={regDept}
+                  onChange={(e) => setRegDept(e.target.value)}
+                />
+              </div>
+            )}
+
+            <div className="field-group">
+              <label>{t('authContactLabel')}</label>
+              <input
+                type="text"
+                placeholder={regRole === 'elev' ? 'Discord: @popescu' : 'Teams: prenume.nume@ler.ro'}
+                value={regContact}
+                onChange={(e) => setRegContact(e.target.value)}
+              />
+            </div>
+
+            <div className="modal-bottom" style={{ padding: 0 }}>
               <button type="button" className="btn btn-secondary" onClick={onClose}>
-                Anulare
+                {t('addCancelBtn')}
               </button>
               <button type="submit" className="btn btn-primary" disabled={loading}>
-                {loading ? 'Se creează contul...' : 'Înregistrare Cont'}
+                {loading ? t('authProcessing') : t('authRegisterSubmit')}
               </button>
             </div>
           </form>

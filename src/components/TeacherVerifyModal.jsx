@@ -1,12 +1,15 @@
 // ============================================================================
 // LER EduShare — Modal Avizare Didactică Oficială (Profesor)
+// Suport Bilingv (Română / Engleză)
 // ============================================================================
 
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function TeacherVerifyModal({ resource, isOpen, onClose, onConfirmVerify }) {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
   const [teacherName, setTeacherName] = useState(currentUser?.fullName || 'Prof. Mihaela Ionescu');
   const [feedback, setFeedback] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -24,7 +27,7 @@ export default function TeacherVerifyModal({ resource, isOpen, onClose, onConfir
     setSubmitting(true);
     try {
       await onConfirmVerify(resource.id, {
-        teacherName: teacherName || 'Cadru Didactic LER',
+        teacherName: teacherName || t('roleProfesor'),
         teacherComment: feedback
       });
       onClose();
@@ -39,11 +42,11 @@ export default function TeacherVerifyModal({ resource, isOpen, onClose, onConfir
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-top">
           <div>
-            <h3 className="modal-title">Avizare Didactică Oficială</h3>
-            <p className="modal-sub">Certificarea conformității științifice și metodologice a materialului.</p>
+            <h3 className="modal-title">{t('verifyTitle')}</h3>
+            <p className="modal-sub">{t('verifySub')}</p>
           </div>
-          <button className="btn-close" onClick={onClose} aria-label="Închide">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button className="btn-close" onClick={onClose} aria-label={t('modalCloseBtn')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -51,14 +54,14 @@ export default function TeacherVerifyModal({ resource, isOpen, onClose, onConfir
         </div>
 
         <div className="context-recap">
-          <span className="context-label">Resursa supusă validării:</span>
+          <span className="context-label">{t('verifyRecapLabel')}</span>
           <h4 className="context-title">{resource.title}</h4>
-          <span className="context-author">Autor: {resource.authorName} ({resource.grade})</span>
+          <span className="context-author">{t('verifyAuthorLabel')} {resource.authorName} ({resource.grade})</span>
         </div>
 
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="field-group">
-            <label>Cadru Didactic Evaluator *</label>
+            <label>{t('verifyTeacherLabel')}</label>
             <input
               type="text"
               required
@@ -68,11 +71,11 @@ export default function TeacherVerifyModal({ resource, isOpen, onClose, onConfir
           </div>
 
           <div className="field-group">
-            <label>Apreciere Metodică & Concluzie *</label>
+            <label>{t('verifyFeedbackLabel')}</label>
             <textarea
               rows={3}
               required
-              placeholder="Ex: Materialul respectă programa școlară în vigoare. Structura logică și algoritmii sunt riguros implementați."
+              placeholder={t('verifyFeedbackPlaceholder')}
               value={feedback}
               onChange={(e) => setFeedback(e.target.value)}
             />
@@ -80,10 +83,10 @@ export default function TeacherVerifyModal({ resource, isOpen, onClose, onConfir
 
           <div className="modal-bottom">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Anulare
+              {t('verifyCancelBtn')}
             </button>
             <button type="submit" className="btn btn-success" disabled={submitting}>
-              {submitting ? 'Se validează...' : 'Certifică Materialul („Verificat de Profesor”)'}
+              {submitting ? t('verifySubmittingBtn') : t('verifySubmitBtn')}
             </button>
           </div>
         </form>

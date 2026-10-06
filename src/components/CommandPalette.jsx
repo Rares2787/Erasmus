@@ -1,10 +1,13 @@
 // ============================================================================
 // LER EduShare — Paletă de căutare rapidă (Ctrl/⌘ + K)
+// Suport Bilingv (Română / Engleză)
 // ============================================================================
 
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function CommandPalette({ isOpen, onClose, resources, onSelect }) {
+  const { t } = useLanguage();
   const [query, setQuery] = useState('');
   const [index, setIndex] = useState(0);
   const inputRef = useRef(null);
@@ -61,14 +64,14 @@ export default function CommandPalette({ isOpen, onClose, resources, onSelect })
             ref={inputRef}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Caută resurse, discipline sau autori…"
+            placeholder={t('palettePlaceholder')}
           />
           <kbd>Esc</kbd>
         </div>
 
         <div className="palette-list">
           {results.length === 0 ? (
-            <div className="palette-empty">Niciun rezultat pentru „{query}”</div>
+            <div className="palette-empty">{t('paletteNoResults')} „{query}”</div>
           ) : (
             results.map((r, i) => (
               <button
@@ -82,7 +85,7 @@ export default function CommandPalette({ isOpen, onClose, resources, onSelect })
               >
                 <span className="palette-item-title">{r.title}</span>
                 <span className="palette-item-meta">
-                  {r.subject} · {r.grade} {r.isVerified && '· ✓ Verificat'}
+                  {r.subject} · {r.grade} {r.isVerified && '· ✓ ' + t('badgeVerified')}
                 </span>
               </button>
             ))
@@ -90,8 +93,8 @@ export default function CommandPalette({ isOpen, onClose, resources, onSelect })
         </div>
 
         <div className="palette-foot">
-          <span><kbd>↑</kbd><kbd>↓</kbd> navigare</span>
-          <span><kbd>↵</kbd> deschide</span>
+          <span><kbd>↑</kbd><kbd>↓</kbd> {t('paletteNavigate')}</span>
+          <span><kbd>↵</kbd> {t('paletteOpen')}</span>
         </div>
       </div>
     </div>

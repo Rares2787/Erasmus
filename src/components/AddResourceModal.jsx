@@ -1,12 +1,15 @@
 // ============================================================================
 // LER EduShare — Modal Propunere Resursă Didactică (Elev)
+// Suport Bilingv (Română / Engleză)
 // ============================================================================
 
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
+import { useLanguage } from '../context/LanguageContext';
 
 export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) {
   const { currentUser } = useAuth();
+  const { t } = useLanguage();
 
   const [title, setTitle] = useState('');
   const [subject, setSubject] = useState('Informatica (C++)');
@@ -26,7 +29,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
     if (!file) return;
 
     if (file.size > 8 * 1024 * 1024) {
-      alert('Dimensiunea fișierului depășește limita recomandată de 8MB.');
+      alert(t('addFileLimit'));
       return;
     }
 
@@ -38,7 +41,6 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
         type: file.type || 'application/pdf',
         dataUrl: reader.result
       });
-      // Dacă este PDF, actualizăm automat formatul conținutului dacă nu e deja setat
       if (file.name.toLowerCase().endsWith('.pdf')) {
         setType('Document PDF & Fişă');
       }
@@ -53,7 +55,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
   async function handleSubmit(e) {
     e.preventDefault();
     if (!content.trim() && !attachment) {
-      alert('Vă rugăm să introduceți textul sau să atașați un fișier/PDF.');
+      alert(t('addAlertNoContent'));
       return;
     }
 
@@ -65,7 +67,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
         grade,
         type,
         authorId: currentUser?.id,
-        authorName: currentUser?.fullName || 'Elev LER',
+        authorName: currentUser?.fullName || (currentUser?.role === 'elev' ? t('roleElev') : 'User'),
         contactHandle,
         description,
         content: content.trim() || `[Fișier atașat: ${attachment.name}]`,
@@ -89,11 +91,11 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
       <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
         <div className="modal-top">
           <div>
-            <h3 className="modal-title">Propunere Resursă Didactică</h3>
-            <p className="modal-sub">Materialul va fi redirecționat către administrator pentru aprobare prealabilă.</p>
+            <h3 className="modal-title">{t('addModalTitle')}</h3>
+            <p className="modal-sub">{t('addModalSub')}</p>
           </div>
-          <button className="btn-close" onClick={onClose} aria-label="Închide">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button className="btn-close" onClick={onClose} aria-label={t('modalCloseBtn')}>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
             </svg>
@@ -103,55 +105,55 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
         <form onSubmit={handleSubmit} className="modal-form">
           <div className="form-grid">
             <div className="field-group span-2">
-              <label>Titlul Resursei *</label>
+              <label>{t('addTitleLabel')}</label>
               <input
                 type="text"
                 required
-                placeholder="Ex: Algoritmul lui Dijkstra explicat formal și prin grafuri"
+                placeholder={t('addTitlePlaceholder')}
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
             </div>
 
             <div className="field-group">
-              <label>Disciplina *</label>
+              <label>{t('addSubjectLabel')}</label>
               <select value={subject} onChange={(e) => setSubject(e.target.value)}>
-                <option value="Informatica (C++)">Informatică (C++)</option>
-                <option value="Python">Python</option>
-                <option value="Matematica">Matematică</option>
-                <option value="Fizica">Fizică</option>
-                <option value="Limba Romana">Limba Română</option>
-                <option value="Chimie / Biologie">Științe Exacte</option>
+                <option value="Informatica (C++)">{t('subjCpp')}</option>
+                <option value="Python">{t('subjPython')}</option>
+                <option value="Matematica">{t('subjMath')}</option>
+                <option value="Fizica">{t('subjPhysics')}</option>
+                <option value="Limba Romana">{t('subjRomanian')}</option>
+                <option value="Chimie / Biologie">{t('subjSciences')}</option>
               </select>
             </div>
 
             <div className="field-group">
-              <label>Nivel de Studiu *</label>
+              <label>{t('addGradeLabel')}</label>
               <select value={grade} onChange={(e) => setGrade(e.target.value)}>
-                <option value="Clasa a IX-a">Clasa a IX-a</option>
-                <option value="Clasa a X-a">Clasa a X-a</option>
-                <option value="Clasa a XI-a">Clasa a XI-a</option>
-                <option value="Clasa a XII-a">Clasa a XII-a (BAC)</option>
+                <option value="Clasa a IX-a">{t('grade9')}</option>
+                <option value="Clasa a X-a">{t('grade10')}</option>
+                <option value="Clasa a XI-a">{t('grade11')}</option>
+                <option value="Clasa a XII-a (BAC)">{t('grade12')}</option>
               </select>
             </div>
 
             <div className="field-group">
-              <label>Format Conținut *</label>
+              <label>{t('addFormatLabel')}</label>
               <select value={type} onChange={(e) => setType(e.target.value)}>
-                <option value="Document PDF & Fişă">Document PDF & Fişă</option>
-                <option value="Note de Curs & Sinteză">Note de Curs & Sinteză</option>
-                <option value="Cod Sursă & Algoritmi">Cod Sursă & Algoritmi</option>
-                <option value="Fișă Aplicativă de Lucru">Fișă Aplicativă de Lucru</option>
-                <option value="Scheme Structurale">Scheme Structurale</option>
+                <option value="Document PDF & Fişă">{t('formatPdf')}</option>
+                <option value="Note de Curs & Sinteză">{t('formatNotes')}</option>
+                <option value="Cod Sursă & Algoritmi">{t('formatCode')}</option>
+                <option value="Fișă Aplicativă de Lucru">{t('formatWorksheet')}</option>
+                <option value="Scheme Structurale">{t('formatDiagrams')}</option>
               </select>
             </div>
 
             <div className="field-group">
-              <label>Canal Instituțional de Contact *</label>
+              <label>{t('addContactLabel')}</label>
               <input
                 type="text"
                 required
-                placeholder="Discord: @alex.ler sau Teams"
+                placeholder={t('addContactPlaceholder')}
                 value={contactHandle}
                 onChange={(e) => setContactHandle(e.target.value)}
               />
@@ -159,7 +161,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
           </div>
 
           <div className="field-group">
-            <label>Atașare Fișier / Document PDF (Opțional sau în loc de text)</label>
+            <label>{t('addFileLabel')}</label>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <input
                 type="file"
@@ -182,18 +184,18 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
                   padding: '8px 12px',
                   borderRadius: 'var(--radius-sm)',
                   backgroundColor: 'var(--apple-blue-subtle)',
-                  border: '1px solid var(--apple-blue)'
+                  border: '1px solid var(--apple-blue)',
+                  fontSize: '12px'
                 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                       <polyline points="14 2 14 8 20 8"></polyline>
-                      <line x1="16" y1="13" x2="8" y2="13"></line>
-                      <line x1="16" y1="17" x2="8" y2="17"></line>
-                      <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
-                    <span style={{ fontSize: '13px', fontWeight: 600 }}>{attachment.name}</span>
-                    <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>({attachment.size})</span>
+                    <span style={{ fontWeight: 600, color: 'var(--apple-blue)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
+                      {attachment.name}
+                    </span>
+                    <span style={{ color: 'var(--text-tertiary)' }}>({attachment.size})</span>
                   </div>
                   <button
                     type="button"
@@ -203,11 +205,11 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
                       border: 'none',
                       color: 'var(--apple-red)',
                       cursor: 'pointer',
-                      fontSize: '12px',
+                      fontSize: '11px',
                       fontWeight: 600
                     }}
                   >
-                    Șterge
+                    {t('addRemoveFile')}
                   </button>
                 </div>
               )}
@@ -215,33 +217,32 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
           </div>
 
           <div className="field-group">
-            <label>Rezumat Didactic & Obiectiv de Învățare *</label>
+            <label>{t('addDescLabel')}</label>
             <textarea
               rows={2}
               required
-              placeholder="Sintetizați noțiunile tratate și cum facilitează acest material înțelegerea conceptelor complexe..."
+              placeholder={t('addDescPlaceholder')}
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
           </div>
 
           <div className="field-group">
-            <label>Conținut Tehnic / Cod / Note Structurate {attachment ? '(Opțional)' : '*'}</label>
+            <label>{t('addContentLabel')}</label>
             <textarea
-              rows={5}
-              className="mono-field"
-              required={!attachment}
-              placeholder={attachment ? "Opțional: adăugați comentarii, instrucțiuni de studiu sau cod..." : "Introduceți corpul complet al materialului, pașii metodici sau codul sursă..."}
+              rows={6}
+              className="apple-textarea code-font"
+              placeholder={t('addContentPlaceholder')}
               value={content}
               onChange={(e) => setContent(e.target.value)}
             />
           </div>
 
           <div className="field-group">
-            <label>Referință Document Extern (Opțional)</label>
+            <label>{t('addLinkLabel')}</label>
             <input
               type="url"
-              placeholder="https://drive.google.com/... sau depozit GitHub"
+              placeholder="https://github.com/... sau link către resurse didactice"
               value={link}
               onChange={(e) => setLink(e.target.value)}
             />
@@ -249,10 +250,10 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
 
           <div className="modal-bottom">
             <button type="button" className="btn btn-secondary" onClick={onClose}>
-              Anulare
+              {t('addCancelBtn')}
             </button>
             <button type="submit" className="btn btn-primary" disabled={submitting}>
-              {submitting ? 'Se transmite...' : 'Înaintează spre Aprobare Admin'}
+              {submitting ? t('addSubmittingBtn') : t('addSubmitBtn')}
             </button>
           </div>
         </form>
