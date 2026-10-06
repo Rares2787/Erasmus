@@ -21,21 +21,6 @@ export default function Navbar({
 
   return (
     <>
-      {/* Antet Instituțional Erasmus+ */}
-      <aside className="global-banner" aria-label="Program Erasmus+">
-        <div className="container banner-inner">
-          <div className="banner-left">
-            <span className="eu-flag-box">EU</span>
-            <span>Programul Erasmus+ | Parteneriat Strategic DIGI-EQUAL</span>
-          </div>
-          <div className="banner-right">
-            <span>Liceul Teoretic „Emil Racoviță” Vaslui</span>
-            <span className="divider-dot"></span>
-            <span>Sesiunea 2026</span>
-          </div>
-        </div>
-      </aside>
-
       {/* Navigație Principală cu Efect Frosted Glass */}
       <header className="navbar">
         <div className="container nav-inner">

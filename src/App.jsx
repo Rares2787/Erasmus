@@ -1,4 +1,4 @@
-// ============================================================================
+﻿// ============================================================================
 // LER EduShare — Aplicație Principală React (Sincronizare în Timp Real)
 // Liceul Teoretic „Emil Racoviță” Vaslui | Erasmus+ DIGI-EQUAL
 // ============================================================================
@@ -751,7 +751,7 @@ export default function App() {
         <div className="container footer-inner">
           <div className="footer-legal">
             <strong>LER EduShare</strong> — Sistem Didactic Instituțional
-            <p>Proiect integrat în cadrul programului Erasmus+ DIGI-EQUAL | Liceul Teoretic „Emil Racoviță” Vaslui.</p>
+            <p>Liceul Teoretic &#8222;Emil Racovi&#355;&#259;&#8221; Vaslui.</p>
           </div>
           <div className="footer-meta">
             <span>Securitate pe Roluri: Elev &bull; Cadru Didactic &bull; Administrator</span>
