@@ -279,23 +279,28 @@ export const db = {
 
   // --- UTILIZATORI ---
   async authenticateUser(email, password) {
-    if (isLiveSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email.trim().toLowerCase())
-        .eq('password_hash', password)
-        .single();
-      if (error || !data) return null;
-      return {
-        id: data.id,
-        email: data.email,
-        fullName: data.full_name,
-        role: data.role,
-        classGrade: data.class_grade,
-        department: data.department,
-        contactHandle: data.contact_handle
-      };
+    if (isLiveSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('users')
+          .select('*')
+          .eq('email', email.trim().toLowerCase())
+          .eq('password_hash', password)
+          .single();
+        if (!error && data) {
+          return {
+            id: data.id,
+            email: data.email,
+            fullName: data.full_name,
+            role: data.role,
+            classGrade: data.class_grade,
+            department: data.department,
+            contactHandle: data.contact_handle
+          };
+        }
+      } catch (err) {
+        // Fallback la conturile locale
+      }
     }
 
     const users = getLocalUsers();
@@ -356,37 +361,43 @@ export const db = {
 
   // --- RESURSE DIDACTICE ---
   async getResources() {
-    if (isLiveSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('resources')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data.map(r => ({
-        id: r.id,
-        title: r.title,
-        subject: r.subject,
-        grade: r.grade,
-        type: r.type,
-        authorId: r.author_id,
-        authorName: r.author_name,
-        contactHandle: r.contact_handle,
-        status: r.status,
-        isVerified: r.is_verified,
-        verifiedBy: r.verified_by,
-        teacherComment: r.teacher_comment,
-        description: r.description,
-        content: r.content,
-        link: r.link,
-        createdAt: r.created_at
-      }));
+    if (isLiveSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('resources')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data) && data.length > 0) {
+          return data.map(r => ({
+            id: r.id,
+            title: r.title,
+            subject: r.subject,
+            grade: r.grade,
+            type: r.type,
+            authorId: r.author_id,
+            authorName: r.author_name,
+            contactHandle: r.contact_handle,
+            status: r.status,
+            isVerified: r.is_verified,
+            verifiedBy: r.verified_by,
+            teacherComment: r.teacher_comment,
+            description: r.description,
+            content: r.content,
+            link: r.link,
+            createdAt: r.created_at
+          }));
+        }
+      } catch (err) {
+        console.warn('Eroare preluare resurse cloud, se afișează cele locale:', err);
+      }
     }
 
     return getLocalResources();
   },
 
   async addResource(resource) {
-    if (isLiveSupabaseConfigured) {
+    if (isLiveSupabaseConfigured && supabase) {
+      const isUuid = resource.authorId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(resource.authorId);
       const { data, error } = await supabase
         .from('resources')
         .insert([{
@@ -394,7 +405,7 @@ export const db = {
           subject: resource.subject,
           grade: resource.grade,
           type: resource.type,
-          author_id: resource.authorId || null,
+          author_id: isUuid ? resource.authorId : null,
           author_name: resource.authorName,
           contact_handle: resource.contactHandle,
           status: 'pending_admin',
@@ -501,34 +512,40 @@ export const db = {
 
   // --- SESIZĂRI PROFESORI ---
   async getReports() {
-    if (isLiveSupabaseConfigured) {
-      const { data, error } = await supabase
-        .from('reports')
-        .select('*')
-        .order('created_at', { ascending: false });
-      if (error) throw error;
-      return data.map(rep => ({
-        id: rep.id,
-        resourceId: rep.resource_id,
-        resourceTitle: rep.resource_title,
-        teacherName: rep.teacher_name,
-        targetRecipient: rep.target_recipient,
-        urgency: rep.urgency,
-        details: rep.details,
-        status: rep.status,
-        createdAt: rep.created_at
-      }));
+    if (isLiveSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase
+          .from('reports')
+          .select('*')
+          .order('created_at', { ascending: false });
+        if (!error && Array.isArray(data)) {
+          return data.map(rep => ({
+            id: rep.id,
+            resourceId: rep.resource_id,
+            resourceTitle: rep.resource_title,
+            teacherName: rep.teacher_name,
+            targetRecipient: rep.target_recipient,
+            urgency: rep.urgency,
+            details: rep.details,
+            status: rep.status,
+            createdAt: rep.created_at
+          }));
+        }
+      } catch (err) {
+        console.warn('Eroare preluare rapoarte cloud:', err);
+      }
     }
 
     return getLocalReports();
   },
 
   async addReport(report) {
-    if (isLiveSupabaseConfigured) {
+    if (isLiveSupabaseConfigured && supabase) {
+      const isUuid = report.resourceId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(report.resourceId);
       const { data, error } = await supabase
         .from('reports')
         .insert([{
-          resource_id: report.resourceId,
+          resource_id: isUuid ? report.resourceId : null,
           resource_title: report.resourceTitle,
           teacher_name: report.teacherName,
           target_recipient: report.targetRecipient,

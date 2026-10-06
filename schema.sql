@@ -69,6 +69,38 @@ CREATE INDEX IF NOT EXISTS idx_resources_grade ON resources(grade);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 
 -- ============================================================================
+-- SECURITATE ȘI ACCES (Row Level Security - RLS)
+-- Permite cheii anonime din Vercel să acceseze tabelele pe Supabase
+-- ============================================================================
+ALTER TABLE users ENABLE ROW LEVEL SECURITY;
+ALTER TABLE resources ENABLE ROW LEVEL SECURITY;
+ALTER TABLE reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE peer_messages ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "Public access on users" ON users;
+CREATE POLICY "Public access on users" ON users FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access on resources" ON resources;
+CREATE POLICY "Public access on resources" ON resources FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access on reports" ON reports;
+CREATE POLICY "Public access on reports" ON reports FOR ALL USING (true) WITH CHECK (true);
+
+DROP POLICY IF EXISTS "Public access on peer_messages" ON peer_messages;
+CREATE POLICY "Public access on peer_messages" ON peer_messages FOR ALL USING (true) WITH CHECK (true);
+
+-- Activare sincronizare live Realtime
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'resources') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE resources;
+  END IF;
+  IF NOT EXISTS (SELECT 1 FROM pg_publication_tables WHERE pubname = 'supabase_realtime' AND tablename = 'reports') THEN
+    ALTER PUBLICATION supabase_realtime ADD TABLE reports;
+  END IF;
+END $$;
+
+-- ============================================================================
 -- DATE INITIALE DEMO (Conturi preconfigurate și resurse)
 -- ============================================================================
 
