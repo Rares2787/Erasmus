@@ -76,7 +76,7 @@ export default function ResourceDetailModal({
               )}
             </div>
           ) : (
-            <div className="evaluator-strip" style={{ backgroundColor: 'var(--apple-orange-subtle)', color: '#b26800', margin: 0 }}>
+            <div className="evaluator-strip" style={{ backgroundColor: 'var(--apple-orange-subtle)', color: 'var(--orange-text)', margin: 0 }}>
               <strong style={{ fontSize: '13px', display: 'block' }}>În curs de analiză metodică</strong>
               <p style={{ fontSize: '12px', marginTop: '2px' }}>
                 Resursă înaintată de elevi. Cadrele didactice pot certifica acuratețea conținutului prin acordarea avizului.

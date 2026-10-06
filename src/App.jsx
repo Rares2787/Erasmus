@@ -15,6 +15,24 @@ import TeacherVerifyModal from './components/TeacherVerifyModal';
 import TeacherReportModal from './components/TeacherReportModal';
 import ResourceDetailModal from './components/ResourceDetailModal';
 import Toast from './components/Toast';
+import CommandPalette from './components/CommandPalette';
+
+// Număr care se animează de la 0 la valoare
+function CountUp({ value, duration = 1200 }) {
+  const [shown, setShown] = useState(0);
+  useEffect(() => {
+    const start = performance.now();
+    let raf;
+    const tick = (now) => {
+      const t = Math.min((now - start) / duration, 1);
+      setShown(Math.round(value * (1 - Math.pow(1 - t, 4))));
+      if (t < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, duration]);
+  return <>{shown}</>;
+}
 
 export default function App() {
   const { currentUser, isElev, isProfesor, isAdmin, isAuthenticated } = useAuth();
@@ -41,6 +59,19 @@ export default function App() {
   const [verifyTarget, setVerifyTarget] = useState(null);
   const [reportTarget, setReportTarget] = useState(null);
   const [detailTarget, setDetailTarget] = useState(null);
+
+  // Paletă de căutare (Ctrl/⌘ + K)
+  const [isPaletteOpen, setIsPaletteOpen] = useState(false);
+  useEffect(() => {
+    function onKey(e) {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+        e.preventDefault();
+        setIsPaletteOpen((o) => !o);
+      }
+    }
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Sistem Toast
   const [toasts, setToasts] = useState([]);
@@ -299,6 +330,26 @@ export default function App() {
     }
   }
 
+  // Apariție treptată la scroll
+  useEffect(() => {
+    const io = new IntersectionObserver(
+      (entries) => entries.forEach((en) => {
+        if (en.isIntersecting) {
+          en.target.classList.add('in');
+          io.unobserve(en.target);
+        }
+      }),
+      { threshold: 0.08 }
+    );
+    document.querySelectorAll('.resource-card, .stream-card, .panel-header-card').forEach((el, i) => {
+      if (el.classList.contains('in')) return;
+      el.classList.add('reveal');
+      el.style.transitionDelay = `${Math.min(i % 6, 5) * 60}ms`;
+      io.observe(el);
+    });
+    return () => io.disconnect();
+  }, [activeTab, filteredCatalog, loading, reports, mySubmissions, pendingAdminResources]);
+
   return (
     <>
       {/* Navigație fără comutator demo */}
@@ -353,14 +404,22 @@ export default function App() {
         <div className="container hero-inner">
           <div>
             <div className="kicker">Platformă Instituțională de Învățare Colaborativă</div>
-            <h1 className="hero-title">Resurse didactice validate.<br />Egalitate de șanse în educație.</h1>
+            <h1 className="hero-title">
+              {['Resurse didactice validate.', 'Egalitate de șanse în educație.'].map((line, li) => (
+                <span key={li} className="hero-line">
+                  {line.split(' ').map((w, wi) => (
+                    <span key={wi} className="hero-word" style={{ animationDelay: `${(li * 4 + wi) * 70}ms` }}>{w}&nbsp;</span>
+                  ))}
+                </span>
+              ))}
+            </h1>
             <p className="hero-description">
               Dezvoltat în cadrul mobilității Erasmus+ <strong>DIGI-EQUAL</strong>, sistemul conectează elevii Liceului Teoretic „Emil Racoviță” prin materiale de studiu riguros structurate, verificate metodologic de cadrele didactice pentru eliminarea erorilor științifice.
             </p>
 
             {/* Căutare Apple Style */}
             <div className="search-container">
-              <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8">
+              <svg className="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
                 <circle cx="11" cy="11" r="8"></circle>
                 <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
               </svg>
@@ -374,6 +433,13 @@ export default function App() {
                 }}
               />
               <button
+                className="palette-hint"
+                onClick={() => setIsPaletteOpen(true)}
+                title="Căutare rapidă"
+              >
+                <kbd>Ctrl K</kbd>
+              </button>
+              <button
                 className="btn btn-primary btn-search"
                 onClick={() => setSearchQuery(tempSearch)}
               >
@@ -385,17 +451,17 @@ export default function App() {
           {/* Panou Metrici */}
           <div className="metrics-grid">
             <div className="metric-card">
-              <span className="metric-value">{verifiedResources.length}</span>
+              <span className="metric-value"><CountUp value={verifiedResources.length} /></span>
               <span className="metric-label">Resurse Verificate</span>
               <span className="metric-sub">Aviz didactic acordat</span>
             </div>
             <div className="metric-card">
-              <span className="metric-value">{approvedResources.length}</span>
+              <span className="metric-value"><CountUp value={approvedResources.length} /></span>
               <span className="metric-label">Publicate în Catalog</span>
               <span className="metric-sub">Disponibile comunității</span>
             </div>
             <div className="metric-card">
-              <span className="metric-value">14</span>
+              <span className="metric-value"><CountUp value={14} /></span>
               <span className="metric-label">Mentori Voluntari</span>
               <span className="metric-sub">Sprijin reciproc elev-elev</span>
             </div>
@@ -511,7 +577,7 @@ export default function App() {
             ) : filteredCatalog.length === 0 ? (
               <div className="empty-view">
                 <div className="empty-symbol">
-                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
                     <circle cx="11" cy="11" r="8"></circle>
                     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
                   </svg>
@@ -654,7 +720,7 @@ export default function App() {
                         </span>
                       </div>
 
-                      <div style={{ backgroundColor: '#fbfbfd', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', fontSize: '13px', color: 'var(--text-primary)' }}>
+                      <div style={{ backgroundColor: 'var(--apple-subtle)', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', padding: '12px 16px', fontSize: '13px', color: 'var(--text-primary)' }}>
                         <strong style={{ display: 'block', marginBottom: '4px', fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-tertiary)' }}>
                           Constatări didactice:
                         </strong>
@@ -757,6 +823,13 @@ export default function App() {
         onTeacherReport={(res) => setReportTarget(res)}
         onAdminRemove={(id) => handleAdminRemove(id)}
         onShowToast={showToast}
+      />
+
+      <CommandPalette
+        isOpen={isPaletteOpen}
+        onClose={() => setIsPaletteOpen(false)}
+        resources={approvedResources}
+        onSelect={(res) => setDetailTarget(res)}
       />
 
       {/* Notificări Toast Apple */}

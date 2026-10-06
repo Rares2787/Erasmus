@@ -129,7 +129,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
               </div>
 
               {/* Ghid informativ discret privind conturile existente */}
-              <div style={{ background: '#fbfbfd', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: '11px', color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
+              <div style={{ background: 'var(--apple-subtle)', border: '1px solid var(--border-hairline)', borderRadius: 'var(--radius-sm)', padding: '10px 14px', fontSize: '11px', color: 'var(--text-tertiary)', lineHeight: 1.4 }}>
                 <strong>Conturi configurate în sistem:</strong><br />
                 &bull; <strong>Elev</strong>: elev@ler.ro (parolă: elev123)<br />
                 &bull; <strong>Profesor</strong>: profesor@ler.ro (parolă: prof123)<br />
