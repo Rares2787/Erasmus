@@ -168,17 +168,6 @@ export default function ResourceDetailModal({
                 </div>
 
                 <div className="attachment-actions">
-                  {parsedAttachment.dataUrl && (
-                    <a
-                      href={parsedAttachment.dataUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary btn-sm"
-                      style={{ textDecoration: 'none' }}
-                    >
-                      {t('modalViewDoc')}
-                    </a>
-                  )}
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
