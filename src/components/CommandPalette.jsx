@@ -53,8 +53,15 @@ export default function CommandPalette({ isOpen, onClose, resources, onSelect })
   }
 
   return (
-    <div className="palette-backdrop" onClick={onClose}>
-      <div className="palette" onClick={(e) => e.stopPropagation()} onKeyDown={handleKey}>
+    <div
+      className="palette-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="palette" onKeyDown={handleKey}>
         <div className="palette-input-row">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8">
             <circle cx="11" cy="11" r="8"></circle>

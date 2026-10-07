@@ -71,8 +71,15 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="modal-dialog">
         <div className="modal-top">
           <div>
             <h3 className="modal-title">{t('authTitle')}</h3>

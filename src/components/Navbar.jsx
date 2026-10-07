@@ -258,8 +258,15 @@ export default function Navbar({
 
         {/* Meniu Mobil Dropdown / Overlay */}
         {mobileMenuOpen && (
-          <div className="mobile-menu-backdrop" onClick={() => setMobileMenuOpen(false)}>
-            <div className="mobile-menu-drawer" onClick={(e) => e.stopPropagation()}>
+          <div
+            className="mobile-menu-backdrop"
+            onMouseDown={(e) => {
+              if (e.target === e.currentTarget) {
+                setMobileMenuOpen(false);
+              }
+            }}
+          >
+            <div className="mobile-menu-drawer">
               {/* Secțiune Profil Utilizator sau Autentificare */}
               {currentUser ? (
                 <div className="mobile-user-card">

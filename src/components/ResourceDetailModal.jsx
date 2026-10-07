@@ -161,8 +161,15 @@ export default function ResourceDetailModal({
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-dialog modal-large" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="modal-dialog modal-large">
         <div className="modal-top">
           <div>
             <div className="sheet-tag">{resource.subject}</div>

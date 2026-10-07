@@ -87,8 +87,15 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal-dialog" onClick={(e) => e.stopPropagation()}>
+    <div
+      className="modal-backdrop"
+      onMouseDown={(e) => {
+        if (e.target === e.currentTarget) {
+          onClose();
+        }
+      }}
+    >
+      <div className="modal-dialog">
         <div className="modal-top">
           <div>
             <h3 className="modal-title">{t('addModalTitle')}</h3>
