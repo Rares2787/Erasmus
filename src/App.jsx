@@ -654,12 +654,30 @@ export default function App() {
 
                     <p style={{ fontSize: '14px', color: 'var(--text-primary)' }}>{item.description}</p>
 
-                    <div>
-                      <strong style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '6px' }}>
-                        {t('adminTechPreview')}
-                      </strong>
-                      <div className="stream-content-box">{item.content}</div>
-                    </div>
+                    {item.attachment && (() => {
+                      try {
+                        const att = typeof item.attachment === 'string' ? JSON.parse(item.attachment) : item.attachment;
+                        return (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', borderRadius: 'var(--radius-sm)', background: 'var(--apple-subtle)', border: '1px solid var(--border-hairline)' }}>
+                            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                              <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--apple-blue)' }}>{att.name}</span>
+                            <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>({att.size})</span>
+                          </div>
+                        );
+                      } catch (e) { return null; }
+                    })()}
+
+                    {item.content && !item.content.startsWith('[Fișier atașat:') && !item.content.startsWith('[Attached file:') && (
+                      <div>
+                        <strong style={{ fontSize: '11px', textTransform: 'uppercase', color: 'var(--text-tertiary)', display: 'block', marginBottom: '6px' }}>
+                          {t('adminTechPreview')}
+                        </strong>
+                        <div className="stream-content-box">{item.content}</div>
+                      </div>
+                    )}
 
                     {item.link && (
                       <div style={{ fontSize: '13px', color: 'var(--apple-blue)' }}>
@@ -668,6 +686,9 @@ export default function App() {
                     )}
 
                     <div className="stream-actions">
+                      <button className="btn btn-secondary btn-sm" onClick={() => setDetailTarget(item)}>
+                        {t('cardDetails')}
+                      </button>
                       <button className="btn btn-secondary btn-sm" onClick={() => handleAdminReject(item.id)}>
                         {t('adminRejectBtn')}
                       </button>
