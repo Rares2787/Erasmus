@@ -374,6 +374,7 @@ export default function App() {
           setAuthInitialTab(tab || 'login');
           setIsAuthOpen(true);
         }}
+        onOpenPalette={() => setIsPaletteOpen(true)}
         theme={theme}
         onToggleTheme={toggleTheme}
       />

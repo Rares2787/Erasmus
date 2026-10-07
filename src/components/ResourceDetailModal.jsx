@@ -136,18 +136,8 @@ export default function ResourceDetailModal({
           {parsedAttachment && (
             <div>
               <h4 className="detail-heading">{t('modalAttachedDoc')}</h4>
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '14px 18px',
-                borderRadius: 'var(--radius-md)',
-                backgroundColor: 'var(--apple-subtle)',
-                border: '1px solid var(--border-hairline)',
-                gap: '16px',
-                flexWrap: 'wrap'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div className="attachment-preview-card">
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   <div style={{
                     width: '38px',
                     height: '38px',
@@ -167,8 +157,8 @@ export default function ResourceDetailModal({
                       <polyline points="10 9 9 9 8 9"></polyline>
                     </svg>
                   </div>
-                  <div>
-                    <strong style={{ display: 'block', fontSize: '14px', color: 'var(--text-primary)' }}>
+                  <div style={{ minWidth: 0, overflow: 'hidden' }}>
+                    <strong style={{ display: 'block', fontSize: '14px', color: 'var(--text-primary)', textOverflow: 'ellipsis', overflow: 'hidden', whiteSpace: 'nowrap' }}>
                       {parsedAttachment.name}
                     </strong>
                     <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>
@@ -177,7 +167,7 @@ export default function ResourceDetailModal({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', gap: '8px' }}>
+                <div className="attachment-actions">
                   {parsedAttachment.dataUrl && (
                     <a
                       href={parsedAttachment.dataUrl}
@@ -324,18 +314,10 @@ export default function ResourceDetailModal({
             </div>
 
             {/* Formular Trimitere Mesaj Nou */}
-            <form onSubmit={handleSendMessage} style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+            <form onSubmit={handleSendMessage} className="peer-msg-form">
               <input
                 type="text"
                 className="apple-textarea"
-                style={{
-                  flex: 1,
-                  padding: '9px 14px',
-                  borderRadius: 'var(--radius-full)',
-                  fontSize: '13px',
-                  border: '1px solid var(--border-strong)',
-                  backgroundColor: 'var(--apple-card)'
-                }}
                 placeholder={t('modalAskPlaceholder', { author: resource.authorName })}
                 value={newMsgText}
                 onChange={(e) => setNewMsgText(e.target.value)}
@@ -345,7 +327,6 @@ export default function ResourceDetailModal({
                 type="submit"
                 className="btn btn-primary btn-sm"
                 disabled={sendingMsg || !newMsgText.trim()}
-                style={{ padding: '8px 18px', whiteSpace: 'nowrap' }}
               >
                 {sendingMsg ? t('modalSendingBtn') : t('modalSendBtn')}
               </button>
