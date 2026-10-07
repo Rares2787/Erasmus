@@ -390,6 +390,7 @@ export const db = {
             description: r.description,
             content: r.content,
             link: r.link,
+            attachment: r.attachment || null,
             createdAt: r.created_at
           }));
         }
@@ -417,8 +418,9 @@ export const db = {
           status: 'pending_admin',
           is_verified: false,
           description: resource.description,
-          content: resource.content,
-          link: resource.link || null
+          content: resource.content || '',
+          link: resource.link || null,
+          attachment: resource.attachment || null
         }])
         .select()
         .single();
@@ -439,6 +441,7 @@ export const db = {
         description: data.description,
         content: data.content,
         link: data.link,
+        attachment: data.attachment || null,
         createdAt: data.created_at
       };
     }

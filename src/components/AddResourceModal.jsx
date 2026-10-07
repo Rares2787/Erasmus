@@ -70,7 +70,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
         authorName: currentUser?.fullName || (currentUser?.role === 'elev' ? t('roleElev') : 'User'),
         contactHandle,
         description,
-        content: content.trim() || `[Fișier atașat: ${attachment.name}]`,
+        content: content.trim() || '',
         link: link.trim() || null,
         attachment: attachment ? JSON.stringify(attachment) : null
       });
