@@ -3,7 +3,7 @@
 // Suport Bilingv (Română / Engleză)
 // ============================================================================
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
 
@@ -15,12 +15,18 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
   const [subject, setSubject] = useState('Informatica (C++)');
   const [grade, setGrade] = useState('Clasa a IX-a');
   const [type, setType] = useState('Cod Sursă & Algoritmi');
-  const [contactHandle, setContactHandle] = useState(currentUser?.contactHandle || 'Discord: @elev.ler');
+  const [contactHandle, setContactHandle] = useState(currentUser?.email || currentUser?.contactHandle || '');
   const [description, setDescription] = useState('');
   const [content, setContent] = useState('');
   const [link, setLink] = useState('');
   const [attachment, setAttachment] = useState(null); // { name, size, type, dataUrl }
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (isOpen && currentUser?.email) {
+      setContactHandle(currentUser.email);
+    }
+  }, [isOpen, currentUser]);
 
   if (!isOpen) return null;
 
@@ -158,7 +164,7 @@ export default function AddResourceModal({ isOpen, onClose, onSubmitResource }) 
             <div className="field-group">
               <label>{t('addContactLabel')}</label>
               <input
-                type="text"
+                type="email"
                 required
                 placeholder={t('addContactPlaceholder')}
                 value={contactHandle}

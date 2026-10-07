@@ -55,7 +55,7 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
         role: regRole,
         classGrade: regRole === 'elev' ? regGrade : null,
         department: regRole === 'profesor' ? regDept : null,
-        contactHandle: regContact || (regRole === 'elev' ? 'Discord: @elev.ler' : 'Teams: @prof.ler')
+        contactHandle: regContact || regEmail || (regRole === 'elev' ? 'elev@ler.ro' : 'profesor@ler.ro')
       });
       onShowToast(t('toastRegisterSuccess'), 'success');
       onClose();
@@ -245,8 +245,8 @@ export default function AuthModal({ isOpen, onClose, initialTab = 'login', onSho
             <div className="field-group">
               <label>{t('authContactLabel')}</label>
               <input
-                type="text"
-                placeholder={regRole === 'elev' ? 'Discord: @popescu' : 'Teams: prenume.nume@ler.ro'}
+                type="email"
+                placeholder={regRole === 'elev' ? 'elev@ler.ro' : 'prenume.nume@ler.ro'}
                 value={regContact}
                 onChange={(e) => setRegContact(e.target.value)}
               />
