@@ -23,7 +23,6 @@ export default function ResourceDetailModal({
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [newMsgText, setNewMsgText] = useState('');
   const [sendingMsg, setSendingMsg] = useState(false);
-  const [showInlinePreview, setShowInlinePreview] = useState(false);
 
   useEffect(() => {
     if (isOpen && resource?.id) {
@@ -34,7 +33,6 @@ export default function ResourceDetailModal({
         .finally(() => setLoadingMessages(false));
     } else {
       setMessages([]);
-      setShowInlinePreview(false);
     }
   }, [isOpen, resource?.id]);
 
@@ -75,11 +73,15 @@ export default function ResourceDetailModal({
     }
   }
 
-  // Convert base64 dataUrl into a browser-native Blob URL (prevents blank/white pages in Chrome/Safari)
-  const blobUrl = useMemo(() => {
-    if (!parsedAttachment?.dataUrl) return null;
+  function handleViewDocument() {
+    if (!parsedAttachment?.dataUrl) return;
     const url = parsedAttachment.dataUrl;
-    if (url.startsWith('http://') || url.startsWith('https://')) return url;
+
+    if (url.startsWith('http://') || url.startsWith('https://')) {
+      window.open(url, '_blank');
+      return;
+    }
+
     try {
       const parts = url.split(',');
       const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf';
@@ -90,32 +92,72 @@ export default function ResourceDetailModal({
         bytes[i] = binary.charCodeAt(i);
       }
       const blob = new Blob([bytes], { type: mime });
-      return URL.createObjectURL(blob);
-    } catch (e) {
-      console.error('Eroare conversie Blob URL PDF:', e);
-      return null;
-    }
-  }, [parsedAttachment]);
+      const blobUrl = URL.createObjectURL(blob);
 
-  // Clean up object URL when component unmounts or attachment changes
-  useEffect(() => {
-    return () => {
-      if (blobUrl && blobUrl.startsWith('blob:')) {
-        URL.revokeObjectURL(blobUrl);
+      // Deshide o nouă filă cu vizualizator dedicat (fără ecran alb sau blocări de securitate Chrome)
+      const win = window.open('', '_blank');
+      if (win) {
+        win.document.write(`
+          <!DOCTYPE html>
+          <html lang="ro">
+            <head>
+              <meta charset="UTF-8">
+              <meta name="viewport" content="width=device-width, initial-scale=1.0">
+              <title>${parsedAttachment.name || 'Document PDF'}</title>
+              <style>
+                * { margin: 0; padding: 0; box-sizing: border-box; }
+                html, body { width: 100%; height: 100%; overflow: hidden; background: #2c2c2e; }
+                iframe, embed { width: 100%; height: 100%; border: none; display: block; }
+              </style>
+            </head>
+            <body>
+              <embed src="${blobUrl}" type="${mime}" width="100%" height="100%">
+            </body>
+          </html>
+        `);
+        win.document.close();
+      } else {
+        const a = document.createElement('a');
+        a.href = blobUrl;
+        a.target = '_blank';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
       }
-    };
-  }, [blobUrl]);
+    } catch (err) {
+      console.error('Eroare la deschiderea PDF:', err);
+      handleDownloadAttachment();
+    }
+  }
 
   function handleDownloadAttachment() {
-    if (!parsedAttachment) return;
-    const downloadHref = blobUrl || parsedAttachment.dataUrl;
-    if (!downloadHref) return;
-    const a = document.createElement('a');
-    a.href = downloadHref;
-    a.download = parsedAttachment.name || 'document.pdf';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    if (!parsedAttachment?.dataUrl) return;
+    try {
+      const parts = parsedAttachment.dataUrl.split(',');
+      const mime = parts[0].match(/:(.*?);/)?.[1] || 'application/pdf';
+      const binary = atob(parts[1]);
+      const len = binary.length;
+      const bytes = new Uint8Array(len);
+      for (let i = 0; i < len; i++) {
+        bytes[i] = binary.charCodeAt(i);
+      }
+      const blob = new Blob([bytes], { type: mime });
+      const downloadUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      a.download = parsedAttachment.name || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(downloadUrl), 10000);
+    } catch (e) {
+      const a = document.createElement('a');
+      a.href = parsedAttachment.dataUrl;
+      a.download = parsedAttachment.name || 'document.pdf';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   }
 
   return (
@@ -203,42 +245,23 @@ export default function ResourceDetailModal({
                 </div>
 
                 <div className="attachment-actions">
-                  {blobUrl && (
-                    <a
-                      href={blobUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="btn btn-secondary btn-sm"
-                      style={{ textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
-                      title={t('modalViewDoc')}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <line x1="10" y1="14" x2="21" y2="3"></line>
-                      </svg>
-                      <span>{t('modalViewDoc')}</span>
-                    </a>
-                  )}
-                  {blobUrl && (
-                    <button
-                      type="button"
-                      className={`btn ${showInlinePreview ? 'btn-primary' : 'btn-secondary'} btn-sm`}
-                      onClick={() => setShowInlinePreview((p) => !p)}
-                    >
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-                        <circle cx="12" cy="12" r="3"></circle>
-                      </svg>
-                      <span>{showInlinePreview ? 'Ascunde previzualizarea' : 'Previzualizează'}</span>
-                    </button>
-                  )}
+                  <button
+                    type="button"
+                    className="btn btn-secondary btn-sm"
+                    onClick={handleViewDocument}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                      <circle cx="12" cy="12" r="3"></circle>
+                    </svg>
+                    <span>{t('modalViewDoc')}</span>
+                  </button>
                   <button
                     type="button"
                     className="btn btn-primary btn-sm"
                     onClick={handleDownloadAttachment}
                   >
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                       <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                       <polyline points="7 10 12 15 17 10"></polyline>
                       <line x1="12" y1="15" x2="12" y2="3"></line>
@@ -247,19 +270,6 @@ export default function ResourceDetailModal({
                   </button>
                 </div>
               </div>
-
-              {/* Previzualizare Integrată PDF direct în modal */}
-              {showInlinePreview && blobUrl && (
-                <div style={{ marginTop: '14px', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-hairline)', background: '#2c2c2e' }}>
-                  <iframe
-                    src={blobUrl}
-                    title={parsedAttachment.name}
-                    width="100%"
-                    height="500px"
-                    style={{ border: 'none', display: 'block', backgroundColor: '#ffffff' }}
-                  />
-                </div>
-              )}
             </div>
           )}
 
